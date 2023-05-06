@@ -1,0 +1,10 @@
+*.jpg
+*.png
+*.pptx
+*.docx
+Documents/
+*.csv
+*.Rdata
+*.feather
+*.h5ad
+scrattch/scrattch-mapping
