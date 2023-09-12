@@ -7,4 +7,6 @@ Documents/
 *.Rdata
 *.feather
 *.h5ad
+*checkpoint.ipynb
+*.DS_Store
 scrattch/scrattch-mapping
