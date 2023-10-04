@@ -925,6 +925,85 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 
 dev.off()
 
+# Cluster on UMAP
+load(paste0(data_dir, "/20230807_RSC-204-337_macaque_patchseq_star2.7_cpm.Rdata"))
+load(paste0(data_dir, "/20230807_RSC-204-337_macaque_patchseq_star2.7_samp.dat.Rdata"))
+
+query.metadata <- samp.dat
+counts      <- cpmR   # Genes are rows, samples are columns
+
+query.counts   <- counts
+query.data   <- logCPM(query.counts)
+
+# Put annotations and counts in the same order
+query.metadata <- query.metadata[match(colnames(query.data),query.metadata$exp_component_name),] 
+rownames(query.metadata) <- query.metadata$exp_component_name  
+
+annoNew <- annoNew[match(rownames(query.metadata),annoNew$exp_component_name),] 
+rownames(annoNew) <- annoNew$exp_component_name 
+
+inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annoNew$roi), TRUE,FALSE)
+#inds2 = annotations_mapped$library_prep_pass_fail == "Pass"
+#inds3 = annotations_mapped$Genes.Detected >= 1000
+#inds4 = annotations_mapped$percent_reads_aligned_total >= 50
+annoNew = annoNew[inds1,] 
+
+load(file=file.path(mappingFolder,"NHP_BG_204_337_AIT115_umap_roi.Rdata"))
+layout <- mapping.umap$layout
+install.packages("dbscan")
+library("dbscan")
+library("scales")
+cl <- hdbscan(layout, minPts = 10)
+n_cl = length(unique(cl$cluster))
+hex_codes <- hue_pal()(n_cl)
+hex_codes[4] = hex_codes[1]
+hex_codes[1] = "#5A5A5A"
+colors = hex_codes[cl$cluster+1]
+png(file.path(mappingFolder,'NHP_BG_204_337_AIT115_umap_roi_hdbscan.png'), width = 1000, height = 1000)
+plot(layout, col=colors, pch=20, cex = 1.5, xlab = 'UMAP1', ylab = 'UMAP2')
+#colors = unique(cl$cluster+1)
+legendtxt = c("Cluster #1 (noise)", "Cluster #2", "Cluster #3", "Cluster #4", "Cluster #5", "Cluster #6")
+#legendtxt[colors==1] = paste(legendtxt[colors==1], "(noise)", sep = " ")
+# first two arguments are x,y positions
+legend(-4, 11, legend = legendtxt, 
+       fill = hex_codes
+)
+dev.off()
+
+inds3 = annoNew$Genes.Detected >= 1000
+inds4 = annoNew$percent_reads_aligned_total >= 25      # Very conservative, but looks like nothing chucked improperly on UMAP
+inds6 = annoNew$marker_sum_norm_label >= 0.6
+annoNew$compound_qc_pass = inds3 & inds4 & inds6
+
+for (clus in sort(unique(cl$cluster))) {
+  if (clus != 0){
+    cat("Cluster #:", clus+1, '\n')
+    anno_sub = annoNew[cl$cluster == clus,]
+    n = dim(anno_sub)[1]
+    print("Fraction RNA_amplification_pass")
+    print(sum(anno_sub$rna_amplification_pass_fail=="Pass")/n)
+    print("Fraction compound QC pass")
+    print(sum(anno_sub$compound_qc_pass)/n)
+    print("Fraction Tree and Corr subclasses agree")
+    print(sum(anno_sub$level3.subclass_Corr == anno_sub$level3.subclass_Tree)/n)
+    print("mean NMS")
+    print(mean(anno_sub$marker_sum_norm_label))
+    type_counts <- table(anno_sub$level3.subclass_Tree)
+    print(type_counts)
+    species_counts <- table(anno_sub$species)
+    print(species_counts)
+    acute <- table(anno_sub$cell_specimen_project)
+    print(acute)
+    contam <- table(anno_sub$contaminationType_label)
+    print(contam)
+  }
+  if (clus == 4){
+    clus5_list = anno_sub$cell_name
+    write.csv(clus5_list, file.path(mappingFolder,'NHP_BG_204_337_umap_cluster5.csv')) 
+  }
+}
+
+
 # Debugging before subsetting
 hist_info <- hist(layout[,2]) 
 table(mapping.labels_Corr[layout[,2]< -4])

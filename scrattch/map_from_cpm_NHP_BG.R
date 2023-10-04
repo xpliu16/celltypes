@@ -109,8 +109,8 @@ query.mapping <- taxonomy_mapping(AIT.anndata= AIT.anndata,
 #query.mapping$level3_subclass_Corr <- AIT.anndata$obs$level3.subclass_label[match(query.mapping$cluster_Corr, AIT.anndata$obs$cluster_label)]
 #query.mapping$level3_subclass_Tree <- AIT.anndata$obs$level3.subclass_label[match(query.mapping$cluster_Tree, AIT.anndata$obs$cluster_label)]
 
-write.csv(query.mapping, file.path(mappingFolder,"NHP_BG_204_341_AIT115_mapping2.csv"), row.names=FALSE)
-save(query.mapping, file=file.path(mappingFolder,"NHP_BG_204_341_AIT115_mapping2.Rdata"))
+write.csv(query.mapping, file.path(mappingFolder,"NHP_BG_204_341_AIT115_mapping.csv"), row.names=FALSE)
+save(query.mapping, file=file.path(mappingFolder,"NHP_BG_204_341_AIT115_mapping.Rdata"))
 
 # Variable renaming
 #clusters  <- unique(query.mapping$cluster)   
@@ -136,7 +136,7 @@ type_counts_Tree = table(annotations_mapped$level3.subclass_Tree)
 write.csv(annotations_mapped, file.path(mappingFolder,"NHP_BG_204_341_AIT115_ann_map_full.csv"), row.names=FALSE)
 save(annotations_mapped, type_counts_Corr, type_counts_Tree, file=file.path(mappingFolder,"NHP_BG_204_341_AIT115_ann_map_full.Rdata"))
 
-dir.create(file.path(mappingFolder, "NHP_BG_RSC_204_341_map_full"))
+#dir.create(file.path(mappingFolder, "NHP_BG_RSC_204_341_map_full"))
 
 buildMappingDirectory(AIT.anndata    = AIT.anndata, 
                       mappingFolder  = file.path(mappingFolder, "NHP_BG_RSC_204_341_map_full"),
@@ -211,6 +211,7 @@ anno_mapped_sub <- annoNew[inds1&inds3&inds4&inds6,]
 
 type_counts_Corr_QC = table(anno_mapped_sub$level3.subclass_Corr)
 type_counts_Tree_QC = table(anno_mapped_sub$level3.subclass_Tree)
+write.csv(anno_mapped_sub, file.path(mappingFolder,"NHP_BG_204_341_AIT115_ann_map_sub_QC.csv"), row.names=FALSE)
 
 type_counts_Corr_QC_df = as.data.frame(type_counts_Corr_QC, row.names = NULL,
               responseName = "Freq")
@@ -506,7 +507,10 @@ buildMappingDirectory(AIT.anndata    = AIT.anndata,
 
 # QC files for Rachel
 # Optional load annoNew from another run
-load(file=file.path(mappingFolder,"NHP_BG_204_341_AIT115_ann_map_QC_full.Rdata"))
+# Run on server:
+load(file=file.path(mappingFolder,"NHP_BG_204_341_AIT115_ann_map_full_QC.Rdata"))
+# Run on laptop:
+#load(file="/Users/xiaoping.liu/celltypes/NHP_BG_anal/NHP_BG_AIT_115/204_341/NHP_BG_204_341_AIT115_ann_map_full_QC.Rdata")
 inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annoNew$roi), TRUE,FALSE)
 inds3 = annoNew$Genes.Detected >= 1000
 inds4 = annoNew$percent_reads_aligned_total >= 25      # Very conservative, but looks like nothing chucked improperly on UMAP
@@ -518,7 +522,10 @@ annoNew$acute[annoNew$cell_specimen_project == "qIVSCC-METa"] = "TRUE"
 annoNew$acute[annoNew$cell_specimen_project == "qIVSCC-METc"] = "FALSE"
 annoNew$revisit1 = (annoNew$rna_amplification_pass_fail=="Fail") & (annoNew$compound_qc_pass == TRUE) 
 
-desired_columns = c('exp_component_name', 'cell_name', 'level3.subclass_Corr', 'level3.subclass_Tree', 'rna_amplification_pass_fail', 'compound_qc_pass', 'BG_ROI', 'roi', 'species', 'postPatch_classification', 'acute', 'Virus', 'creCell', 'revisit')
+desired_columns = c('exp_component_name', 'cell_name', 'cell_id', 'level3.subclass_Corr', 
+                    'level3.subclass_Tree', 'rna_amplification_pass_fail', 'compound_qc_pass', 
+                    'BG_ROI', 'roi', 'species', 'postPatch_classification', 'acute', 'Virus', 
+                    'creCell')
 # Or striatal ROI?
 anno_morpho = annoNew[desired_columns]
 write.csv(anno_morpho, file.path(mappingFolder,"NHP_BG_204_341_AIT115_anno_morpho.csv"))
