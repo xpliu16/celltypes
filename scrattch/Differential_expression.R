@@ -35,7 +35,7 @@ goi = read.csv(file.path(mappingFolder,'VGIC_short.csv'))   # Genes of interest
 #pbmc <- LoadData("pbmc3k", type = "pbmc3k.final")
 #levels(pbmc)
 
-#AIT.anndata <- loadTaxonomy(refFolder)
+#AIT.anndata <- loadTaxossh -N -L 8787:n77:8787 xiaoping.liu@hpc-loginnomy(refFolder)
 # Use complete taxonomy
 AIT.anndata <- read_h5ad(file.path(refFolder, "NHP_BG_AIT115_complete.h5ad"))
 
@@ -67,7 +67,7 @@ deg_comp <- function(AIT.anndata, annoBG, subclasses, goi, type1, type2, level, 
   Expr.dat<-Expr.dat[kpsubclass,]
   #anno_type = annoBG$level3.subclass_label
   anno_type = annoBG[[level]]
-  anno_type_color = annoBG[[lev %>% str_replace("label", "color")]]
+  anno_type_color = annoBG[[level %>% str_replace("label", "color")]]
 
   # Optional: subset to ion channel genes
   genesSamp1 <- is.element(colnames(Expr.dat),goi$Approved.symbol)
@@ -112,9 +112,6 @@ deg_comp <- function(AIT.anndata, annoBG, subclasses, goi, type1, type2, level, 
   Idents(brain) <- brain.metadata$subclass
   #brain_log <- NormalizeData(brain, normalization.method = "LogNormalize", scale.factor = 10000)
   de.markers <- FindMarkers(brain, ident.1 = type1, ident.2 = type2)
-  temp <- de.markers$avg_log2FC
-  allMarkers <- append(allMarkers, de.markers[temp>FCcutoff,])
-  allMarkers <- append(allMarkers, de.markers[temp<-FCcutoff,])
 
   expr1 = mean(brain.data['KCNH7', anno_type==type1])
   expr2 = mean(brain.data['KCNH7', anno_type==type2])
@@ -128,6 +125,9 @@ for (comp in comparisons){
   print(paste0(comp[1], ' versus ', comp[2]))
   markers = deg_comp(AIT.anndata, annoBG, subclasses, goi, comp[[1]], comp[[2]], comp[[3]], FCcutoff)
   print(markers)
+  temp <- markers$avg_log2FC
+  allMarkers <- append(allMarkers, rownames(markers)[temp>FCcutoff])
+  allMarkers <- append(allMarkers, rownames(markers)[temp<-FCcutoff])
   
   if (is.null(comp[[2]])){
     title = paste0(comp[[1]])
@@ -163,6 +163,7 @@ for (comp in comparisons){
   dev.off()
 }
 # NOTE png's can be slow to save
+print("All Markers:", allMarkers)
 
 keepinds = anno_type == type1 | anno_type == type2
 Expr.dat <- Expr.dat[,keepinds]
