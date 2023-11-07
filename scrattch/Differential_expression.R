@@ -126,7 +126,7 @@ deg_comp <- function(Expr.dat, annoBG, subclasses, goi, type1, type2, level, FCc
   #Idents(brain) <- brain.metadata$subclass
   Idents(brain) <- ident_vec
   #brain_log <- NormalizeData(brain, normalization.method = "LogNormalize", scale.factor = 10000)
-  de.markers <- FindMarkers(brain, ident.1 = "type1", ident.2 = "type2")
+  de.markers <- FindMarkers(brain, ident.1 = "type1", ident.2 = "type2")    # If you want to downsample: max.cells.per.ident = max_n_cells
 
   expr1 = mean(brain.data['KCNH7', anno_type==type1])
   expr2 = mean(brain.data['KCNH7', anno_type==type2])
@@ -172,8 +172,8 @@ for (comp in comparisons){
     caption = ''
   }
   write.csv(markers, file.path(mappingFolder, paste0('DEG/', title, "_ion_channels_norm.csv")))
-  png(file.path(mappingFolder, paste0('DEG/', title, "_ion_channels_norm.png")), width = 600, height = 400)
-  print(EnhancedVolcano(markers,
+  png(file.path(mappingFolder, paste0('DEG/', title, "_ion_channels_norm.png")), width = 800, height = 600)
+  p1 <- EnhancedVolcano(markers,
     lab = rownames(markers),
     x = 'avg_log2FC',
     y = 'p_val_adj',
@@ -182,7 +182,7 @@ for (comp in comparisons){
   #  xlim = c(-5.5, 5.5),
   #  ylim = c(0, -log10(10e-12)),
     pointSize = 1.5,
-    labSize = 4,
+    labSize = 5,
     title = title,
     subtitle = 'Ion channel DEGs, normalized',
     caption = caption,
@@ -196,7 +196,12 @@ for (comp in comparisons){
     hline = c(10e-8),
     #widthConnectors = 0.5
     )
-  )
+  xr = layer_scales(p1)$x$get_limits() %>% range
+  xlim(xr*0.9)
+
+  p1 <- p1 + theme(axis.text.x = element_text(size=26), axis.text.y=element_text(size=26), axis.title=element_text(size=26))
+  
+  print(p1)
   dev.off()
 }
 # NOTE png's can be slow to save
@@ -211,8 +216,8 @@ genes = c("SCN1A", "SCN9A", "SCN4B", "KCNQ5", "KCNAB1", "KCNB2", "KCNC2",
              "KCND2", "KCNH1", "KCNH7", "KCNJ3", "KCNK2", "KCNT2", "KCNIP4", "HCN1", 
              "CACNA1A", "CACNA1D", "ANO10", "ANO3", "ANO4", "ANO6")
 genes = c("SCN9A", "SCN4B", "KCNQ5", "KCNAB1", "KCNC2", 
-             "KCND2", "KCNH1", "KCNJ3", "KCNK2", "KCNT2", "KCNIP4",
-             "CACNA2D3") 
+             "KCND2", "KCNH1", "KCNJ3", "KCNK2", "KCNN3", "KCNT2", "KCNIP4",
+             "CACNA2D3", "HCN1") 
 
 level = 'level3.subclass_label'
 anno_type = annoBG[[level]]
@@ -223,6 +228,7 @@ Expr.dat <- Expr.dat[keepinds,]  # May be other dimension if running from contig
 anno_type <- anno_type[keepinds]
 anno_type_color <-anno_type_color[keepinds]
 #genes = c("KCNC2", "KCNQ5", "KCNIP4", "CACNA2D3")
+colz = anno_type_color[match(subclass_short, anno_type)]
 
 #anno_type <- str_wrap(anno_type, width = 5)
 p = list()
@@ -234,8 +240,8 @@ for (i in 1:length(genes)){
     df$subclass <- factor(df$subclass, levels = rev(subclass_short))
     # Basic violin plot
     #p[[i]] <- ggplot(df, aes(x=subclass, y=expr_log)) + geom_violin(bw = 0.3) + geom_boxplot(width=0.1) 
-    p[[i]] <- ggplot(df, aes(x=subclass, y=expr_log, fill = subclass_color)) + geom_violin(bw = 0.3, color = 'darkgray', show.legend= FALSE)
-    p[[i]] <- p[[i]] + ylab(gene) + xlab(NULL) + 
+    p[[i]] <- ggplot(df, aes(x=subclass, y=expr_log, fill = subclass)) + geom_violin(bw = 0.3, color = 'darkgray', show.legend= FALSE) + scale_fill_manual(values = rev(colz))
+    p[[i]] <- p[[i]] + ylab(gene) + xlab(NULL) +
     theme(axis.title.y = element_text(angle=0, size = 36), axis.title.x = element_text(size = 36), axis.text.y = element_text(angle = 0, size = 36)) +
      scale_y_discrete(position = "right") + coord_flip()
     if (i > 1) {
@@ -243,8 +249,8 @@ for (i in 1:length(genes)){
     }
     
 }   
-png(file.path(mappingFolder, "/DEG/violins.png"), width = 2550, height = 1200)
-p[[1]] | p[[2]] | p[[3]] | p[[4]] | p[[5]] | p[[6]] | p[[7]] | p[[8]] | p[[9]] | p[[10]] | p[[11]] | p[[12]]
+png(file.path(mappingFolder, "/DEG/violins.png"), width = 3200, height = 1100)
+p[[1]] | p[[2]] | p[[3]] | p[[4]] | p[[5]] | p[[6]] | p[[7]] | p[[8]] | p[[9]] | p[[10]] | p[[11]] | p[[12]] | p[[13]] | p[[14]]
 dev.off()
 #+ scale_x_discrete(limits = subclass_short) + scale_y_discrete(position = "top") 
 
