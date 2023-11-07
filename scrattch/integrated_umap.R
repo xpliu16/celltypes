@@ -1,6 +1,6 @@
 library(scrattch.mapping)
-install.packages('metap')
-library(metap)
+#install.packages('metap')
+#library(metap)
 
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115"
 #refFolder =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_115/patchseq"
@@ -9,7 +9,7 @@ data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Mac
 #patchseqFolder = r"(C:\Users\briank\Documents\Mapping\Macaque_MTGmapping\)"
 
 #?????
-cell_list<-(read.csv2(r"(C:\Users\briank\Analysis\L5_cross_area\mapping to macaque MTG\cell_list_L5.csv)",header = TRUE,sep = ","))
+#cell_list<-(read.csv2(r"(C:\Users\briank\Analysis\L5_cross_area\mapping to macaque MTG\cell_list_L5.csv)",header = TRUE,sep = ","))
 
 #annoBG <- read_feather(file.path(refFolder, "anno.feather"))
 #Expr.dat <- read_feather(file.path(refFolder, "data.feather"))
@@ -35,6 +35,11 @@ subclass = c("D1-Matrix", "D2-Striosome", "D2-Matrix", "D2-Hybrid-MCHR2",
 kpsubclass<-is.element(annoBG$level3.subclass_label,subclass)
 annoBG<-annoBG[kpsubclass,]
 Expr.dat<-Expr.dat[kpsubclass,]
+
+# Color dictionary
+colz <- annoBG$level3.subclass_color[match(subclass, annoBG$level3.subclass_label)]  
+col_table = data.frame(subclass, colz)
+write.csv(col_table, file.path(mappingFolder, 'colortable.csv'))
 
 #patch_anno<-read_feather(paste(patchseqFolder, "anno2.feather",sep=""))
 #load(file.path(mappingFolder,"NHP_BG_204_329_AIT115_ann_map_QC_sub.Rdata"))
@@ -219,9 +224,9 @@ dev.off()
 install.packages("pals")
 library(pals)
 colz <- DiscretePalette(n = length(unique(annoBG_all$level3.subclass_label)), palette = "polychrome")
-jpeg(file.path(mappingFolder,'204_337_integrated_umap4_dendGn_lab_roi.jpg'), width = 2400, height = 1200,
+jpeg(file.path(mappingFolder,'204_337_integrated_umap4_dendGn_lab_repel_roi.jpg'), width = 2400, height = 1200,
      pointsize = 12, quality = 100)
-p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5, cols=colz, label=T)+ggtitle("FACS")+xlim(xl) + ylim(yl)
+p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5, cols=colz, label=T, repel=T)+ggtitle("FACS")+xlim(xl) + ylim(yl)
 #LabelClusters(plot = p2, id = 'subclass')
 plot_grid(p1,p2)
 p1+p2    # WHAT DOES THIS DO?
@@ -232,13 +237,13 @@ dev.off()
 #colz <- DiscretePalette(n = length(unique(annoBG_all$level3.subclass_label)), palette = "polychrome")
 sc_names = sort(unique(brain.combined@meta.data$subclass))
 colz <- brain.combined@meta.data$subclass_color_corr[match(sc_names, brain.combined@meta.data$subclass)]  
-jpeg(file.path(mappingFolder,'204_337_integrated_umap4_dendGn_nolab_roi.jpg'), width = 3500, height = 1500,
+jpeg(file.path(mappingFolder,'204_337_integrated_umap4_dendGn_nolab2_roi.jpg'), width = 3500, height = 1500,
      pointsize = 12, quality = 100)
 p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = 0.5, cols=colz)+
   xlim(xl) + ylim(yl) +  guides(color = guide_legend(override.aes = list(size=4), ncol=1) ) 
 #LabelClusters(plot = p2, id = 'subclass')
-p1<- p1 + theme(axis.text.x=element_text(size=30), axis.text.y=element_text(size=30), axis.title=element_text(size=30, face="bold"), legend.text = element_text(size=30))
-p2<- p2 + theme(axis.text.x=element_text(size=30), axis.text.y=element_text(size=30), axis.title=element_text(size=30, face="bold"), legend.text = element_text(size=35))
+p1<- p1 + theme(axis.text.x=element_text(size=45), axis.text.y=element_text(size=45), axis.title=element_text(size=45, face="bold", margin=0.1), legend.text = element_text(size=20))
+p2<- p2 + theme(axis.text.x=element_text(size=45), axis.text.y=element_text(size=45), axis.title=element_text(size=45, face="bold", margin=0.1), legend.text = element_text(size=25))
 plot_grid(p1,p2)
 p1+p2    # WHAT DOES THIS DO?
 dev.off()
