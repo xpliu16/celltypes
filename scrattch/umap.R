@@ -10,13 +10,13 @@ library(scrattch.mapping)
 
 #load(file.path(mappingFolder,"NHP_BG_RSC_204_324_mapping.Rdata"))
 #load(file.path(mappingFolder,"NHP_BG_RSC_204_324_ann_map.Rdata"))
-load(file.path(mappingFolder,"NHP_BG_204_337_AIT115_mapping2.Rdata"))
-#load(file.path(mappingFolder,"NHP_BG_204_337_AIT115ann_map_full.Rdata"))    # annotations_mapped with all samples
+load(file.path(mappingFolder,"NHP_BG_204_349_AIT115_mapping.Rdata"))
+#load(file.path(mappingFolder,"NHP_BG_204_349_AIT115ann_map_full.Rdata"))    # annotations_mapped with all samples
 
-load(file.path(mappingFolder,"NHP_BG_204_337_AIT115_ann_map_QC_full.Rdata"))  # anno_new with basic QC'ed samples
+load(file.path(mappingFolder,"NHP_BG_204_349_AIT115_ann_map_full_QC.Rdata"))  # anno_new with basic QC'ed samples
 
-load(paste0(data_dir, "/20230807_RSC-204-337_macaque_patchseq_star2.7_cpm.Rdata"))
-load(paste0(data_dir, "/20230807_RSC-204-337_macaque_patchseq_star2.7_samp.dat.Rdata"))
+load(paste0(data_dir, "/20231116_RSC-204-349_macaque_patchseq_star2.7_cpm.Rdata"))
+load(paste0(data_dir, "/20231116_RSC-204-349_macaque_patchseq_star2.7_samp.dat.Rdata"))
 
 query.metadata <- samp.dat
 counts      <- cpmR   # Genes are rows, samples are columns
@@ -42,13 +42,15 @@ annotations_mapped <- annotations_mapped[match(rownames(query.metadata),annotati
 rownames(annotations_mapped) <- annotations_mapped$exp_component_name 
 
 #annotations_mapped$cluster <- factor(query.mapping$cluster, levels=clusters)  # Make into discrete levels
-#inds1 = grepl("STR",annotations_mapped$roi)
-inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annotations_mapped$roi), TRUE,FALSE)
+inds1 = grepl("STR",annotations_mapped$roi)
+#inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annotations_mapped$roi), TRUE,FALSE)
 inds2 = annotations_mapped$library_prep_pass_fail == "Pass"
 inds3 = annotations_mapped$Genes.Detected >= 1000
 inds4 = annotations_mapped$percent_reads_aligned_total >= 50
-anno_mapped_sub = annotations_mapped[inds1&inds2&inds3&inds4,]  # JUST USE INDS1 HERE TO MATCH UMAP OF 946 samples, then apply basic QC below
-query.data_sub = query.data[,inds1&inds2&inds3&inds4]
+#anno_mapped_sub = annotations_mapped[inds1&inds2&inds3&inds4,]  # JUST USE INDS1 HERE TO MATCH UMAP OF 946 samples, then apply basic QC below
+#query.data_sub = query.data[,inds1&inds2&inds3&inds4]
+anno_mapped_sub = annotations_mapped[inds1,]
+query.data_sub = query.data[,inds1]
 # check n cells
 
 #query.counts_t <- t(query.counts)
@@ -60,8 +62,12 @@ mapping.labels_Tree <- anno_mapped_sub$level3.subclass_Tree
 # check rows are aligned - yes
 
 #mapping.umap <- umap(mapping.data)
-#save(mapping.umap, file=file.path(mappingFolder,"NHP_BG_204_337_AIT115_umap_roi.Rdata"))
-load(file=file.path(mappingFolder,"NHP_BG_204_337_AIT115_umap_roi.Rdata"))
+#save(mapping.umap, file=file.path(mappingFolder,"NHP_BG_204_349_AIT115_umap_roi.Rdata"))
+load(file=file.path(mappingFolder,"NHP_BG_204_349_AIT115_umap_roi.Rdata"))
+
+# With full taxonomy mappings
+load(file=file.path(mappingFolder,"NHP_BG_204_349_AIT115_ann_map_roi_QC_withglia.Rdata"))
+anno_mapped_sub <- annoNew_wglia
 
 # Optional: Further subset by score.Corr
 inds5 <- anno_mapped_sub$score.Corr >= 0.6
@@ -86,8 +92,8 @@ mapping.colors_Corr <-
 
 layout <- mapping.umap$layout
 
-#jpeg(file.path(mappingFolder,'204_337_umap_Tree_roi_nGenes_percAligned.jpg'), quality = 100)
-jpeg(file.path(mappingFolder,'204_337_umap_Tree_roi.jpg'), quality = 100)
+#jpeg(file.path(mappingFolder,'204_349_umap_Tree_roi_nGenes_percAligned.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_umap_Tree_roi.jpg'), quality = 100)
 main="UMAP Visualization of Tree mapped NHP_BG Patch-seq cells"
 pad=0.1 # was 0.1
 cex=0.4
@@ -338,7 +344,7 @@ dev.off()
 
 
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_library_prep.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_library_prep.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: library_prep_pass_fail"
 pad=0.1 # was 0.1
 cex=0.4
@@ -370,7 +376,7 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_percent_intronic_15.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_percent_intronic_15.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: percent_reads_aligned_to_introns"
 pad=0.1 # was 0.1
 cex=0.4
@@ -403,7 +409,7 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 dev.off()
 
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_scoreCorr2.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_scoreCorr2.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: score.Corr (mapping confidence)"
 pad=0.1 # was 0.1
 cex=0.4
@@ -442,7 +448,7 @@ hist_info <- hist(anno_mapped_sub$score.Corr,
 dev.off()
 
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_nGenes.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_nGenes.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Number of genes detected"
 pad=0.1 # was 0.1
 cex=0.4
@@ -474,7 +480,7 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_nGenes_1000.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_nGenes_1000.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Number of genes detected"
 pad=0.1 # was 0.1
 cex=0.4
@@ -507,7 +513,7 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 dev.off()
 
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_400bp.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_400bp.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Percent > 400bp"
 pad=0.1 # was 0.1
 cex=0.4
@@ -540,7 +546,7 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 dev.off()
 
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_amplified_quantity.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_amplified_quantity.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Amplified quantity (ng)"
 pad=0.1 # was 0.1
 cex=0.4
@@ -573,7 +579,7 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_amplified_quantity_4.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_amplified_quantity_4.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Amplified quantity (ng)"
 pad=0.1 # was 0.1
 cex=0.4
@@ -606,7 +612,7 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_amplified_quantity_90.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_amplified_quantity_90.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Amplified quantity (ng)"
 pad=0.1 # was 0.1
 cex=0.4
@@ -641,7 +647,7 @@ dev.off()
 
 quality_score <- annoNew[match(anno_mapped_sub$exp_component_name, annoNew$exp_component_name), 
                "quality_score_label"] 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_quality_score.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_quality_score.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Quality Score (Pavlidis lab)"
 pad=0.1 # was 0.1
 cex=0.4
@@ -675,7 +681,7 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 dev.off()
 
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_culture_acute.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_culture_acute.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Acute vs. Cultured"
 pad=0.1 # was 0.1
 cex=0.4
@@ -709,7 +715,7 @@ dev.off()
 
 NMS <- annoNew[match(anno_mapped_sub$exp_component_name, annoNew$exp_component_name), 
                "Norm_Marker_Sum.0.4_label"] 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_NMS.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_NMS.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Normalized Marker Sum"
 pad=0.1 # was 0.1
 cex=0.4
@@ -745,7 +751,7 @@ NMS <- annoNew[match(anno_mapped_sub$exp_component_name, annoNew$exp_component_n
                "marker_sum_norm_label"] 
 NMS <- NMS > 0.6
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_NMS06.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_NMS06.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Normalized Marker Sum"
 pad=0.1 # was 0.1
 cex=0.4
@@ -788,7 +794,7 @@ dev.off()
 
 contamsum <- contamsum < 4.0
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_contamsum.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_contamsum.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: Contam_sum"
 pad=0.1 # was 0.1
 cex=0.4
@@ -821,7 +827,7 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 dev.off()
 
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_percaligned25.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_percaligned25.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: percent_reads_aligned"
 pad=0.1 # was 0.1
 cex=0.4
@@ -853,7 +859,7 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_percaligned50.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_percaligned50.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells: percent_reads_aligned"
 pad=0.1 # was 0.1
 cex=0.4
@@ -893,7 +899,7 @@ percalign <- anno_mapped_sub$percent_reads_aligned_total > 25
 ngenes <- anno_mapped_sub$Genes.Detected > 1000
 pass = NMS & percalign & ngenes
 
-jpeg(file.path(mappingFolder,'204_337_AIT115_umap_compoundQC.jpg'), quality = 100)
+jpeg(file.path(mappingFolder,'204_349_AIT115_umap_compoundQC.jpg'), quality = 100)
 main="UMAP Visualization of Corr mapped cells"
 pad=0.1 # was 0.1
 cex=0.4
@@ -926,8 +932,8 @@ legend(legend.pos, legend=legend.text, inset=0.03,
 dev.off()
 
 # Cluster on UMAP
-load(paste0(data_dir, "/20230807_RSC-204-337_macaque_patchseq_star2.7_cpm.Rdata"))
-load(paste0(data_dir, "/20230807_RSC-204-337_macaque_patchseq_star2.7_samp.dat.Rdata"))
+load(paste0(data_dir, "/20231116_RSC-204-349_macaque_patchseq_star2.7_cpm.Rdata"))
+load(paste0(data_dir, "/20231116_RSC-204-349_macaque_patchseq_star2.7_samp.dat.Rdata"))
 
 query.metadata <- samp.dat
 counts      <- cpmR   # Genes are rows, samples are columns
@@ -939,16 +945,18 @@ query.data   <- logCPM(query.counts)
 query.metadata <- query.metadata[match(colnames(query.data),query.metadata$exp_component_name),] 
 rownames(query.metadata) <- query.metadata$exp_component_name  
 
+annoNew <- anno_mapped_sub # If taking roi filtered data from above, skip filtering on subsequent lines
 annoNew <- annoNew[match(rownames(query.metadata),annoNew$exp_component_name),] 
 rownames(annoNew) <- annoNew$exp_component_name 
 
-inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annoNew$roi), TRUE,FALSE)
+#inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annoNew$roi), TRUE,FALSE)
+inds1 = grepl("STR",annotations_mapped$roi)
 #inds2 = annotations_mapped$library_prep_pass_fail == "Pass"
 #inds3 = annotations_mapped$Genes.Detected >= 1000
 #inds4 = annotations_mapped$percent_reads_aligned_total >= 50
 annoNew = annoNew[inds1,] 
 
-load(file=file.path(mappingFolder,"NHP_BG_204_337_AIT115_umap_roi.Rdata"))
+load(file=file.path(mappingFolder,"NHP_BG_204_349_AIT115_umap_roi.Rdata"))
 layout <- mapping.umap$layout
 install.packages("dbscan")
 library("dbscan")
@@ -959,13 +967,13 @@ hex_codes <- hue_pal()(n_cl)
 hex_codes[4] = hex_codes[1]
 hex_codes[1] = "#5A5A5A"
 colors = hex_codes[cl$cluster+1]
-png(file.path(mappingFolder,'NHP_BG_204_337_AIT115_umap_roi_hdbscan.png'), width = 1000, height = 1000)
+png(file.path(mappingFolder,'NHP_BG_204_349_AIT115_umap_roi_hdbscan2.png'), width = 1000, height = 1000)
 plot(layout, col=colors, pch=20, cex = 1.5, xlab = 'UMAP1', ylab = 'UMAP2')
 #colors = unique(cl$cluster+1)
-legendtxt = c("Cluster #1 (noise)", "Cluster #2", "Cluster #3", "Cluster #4", "Cluster #5", "Cluster #6")
+legendtxt = c("Cluster #1 (noise)", "Cluster #2", "Cluster #3", "Cluster #4", "Cluster #5", "Cluster #6", "Cluster #7")
 #legendtxt[colors==1] = paste(legendtxt[colors==1], "(noise)", sep = " ")
 # first two arguments are x,y positions
-legend(-4, 11, legend = legendtxt, 
+legend(-4, -5, legend = legendtxt, 
        fill = hex_codes
 )
 dev.off()
@@ -988,21 +996,131 @@ for (clus in sort(unique(cl$cluster))) {
     print(sum(anno_sub$level3.subclass_Corr == anno_sub$level3.subclass_Tree)/n)
     print("mean NMS")
     print(mean(anno_sub$marker_sum_norm_label))
+    print("mean_score_tree")
+    print(mean(anno_sub$score.Tree))
+    print("mean_score_corr")
+    print(mean(anno_sub$score.Corr))
+    print("mean_ngenes")
+    print(mean(anno_sub$Genes.Detected))
+    
     type_counts <- table(anno_sub$level3.subclass_Tree)
+    print('subclass_Tree')
     print(type_counts)
+    
     species_counts <- table(anno_sub$species)
     print(species_counts)
     acute <- table(anno_sub$cell_specimen_project)
+    print('Acute or cultured')
     print(acute)
+    
+    print('Contamination type')
     contam <- table(anno_sub$contaminationType_label)
     print(contam)
+    
+    print('subclass_Tree (full taxonomy)')
+    wglia <- table(anno_sub$level3.subclass_Tree_wglia)
+    print(wglia)
+    
+    print('subclass_Corr (full taxonomy)')
+    wglia <- table(anno_sub$level3.subclass_Corr_wglia)
+    print(wglia)
+    
+    print('Post-patch classification')
+    nuc <- table(anno_sub$postPatch_classification)
+    print(nuc)
+    print(nuc/sum(nuc))
+    
+    anno_sub_cultured <- anno_sub[anno_sub$cell_specimen_project=='qIVSCC-METc',]
+    nuc <- table(anno_sub_cultured$postPatch_classification)
+    print('Post-patch classification (culture neurons)')
+    print(nuc/sum(nuc))
+    print('mean NMS (cultured)')
+    print(mean(anno_sub_cultured$marker_sum_norm_label))
   }
   if (clus == 4){
     clus5_list = anno_sub$cell_name
-    write.csv(clus5_list, file.path(mappingFolder,'NHP_BG_204_337_umap_cluster5.csv')) 
+    write.csv(clus5_list, file.path(mappingFolder,'NHP_BG_204_349_umap_cluster5.csv')) 
+    write.csv(anno_sub, file.path(mappingFolder,'NHP_BG_204_349_umap_cluster5_meta.csv')) 
+    anno_sub_OPC = anno_sub[anno_sub$level3.subclass_Tree_wglia=='Oligos_Pre',]
+    nuc <- table(anno_sub_OPC$postPatch_classification)
+    print('Post-patch classification for mappings to Oligos_Pre')
+    print(nuc)
   }
 }
 
+anno_sub_cultured <- annoNew[annoNew$cell_specimen_project=='qIVSCC-METc',]
+nuc1 <- table(anno_sub_cultured$postPatch_classification)
+print('Post-patch classification (all culture neurons)')
+print(nuc1)
+print(nuc1/sum(nuc1))
+
+anno_sub_acute <- annoNew[annoNew$cell_specimen_project=='qIVSCC-METa',]
+nuc2 <- table(anno_sub_acute$postPatch_classification)
+print('Post-patch classification (all acute neurons)')
+print(nuc2)
+print(nuc2/sum(nuc2))
+
+cl_cultured <- cl$cluster[annoNew$cell_specimen_project=='qIVSCC-METc']
+table(cl_cultured, anno_sub_cultured$postPatch_classification)
+
+cl_acute <- cl$cluster[annoNew$cell_specimen_project=='qIVSCC-METa']
+table(cl_acute, anno_sub_acute$postPatch_classification)
+
+install.packages("corrr")
+library('corrr')
+
+install.packages("ggcorrplot")
+library(ggcorrplot)
+
+install.packages("FactoMineR")
+library("FactoMineR")
+
+# PCA analysis of gene expression
+inds1 = grepl("STR",query.metadata$roi)
+data.roi <- query.data[, inds1]
+## Subset query data to just those markers
+AIT.anndata <- loadTaxonomy(refFolder)
+dend <- readRDS(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]])
+allMarkers = unique(unlist(get_dend_markers(dend)))
+data.roi = data.roi[intersect(rownames(data.roi), allMarkers),]
+data_normalized <- scale(t(data.roi))     # scales the columns - beware you are scaling skewed data, but it should be at least logged
+max(data_normalized)
+min(data_normalized)
+
+data.pca <- prcomp(data_normalized, rank = 20)
+summary(data.pca)
+data.trans <- predict(data.pca, newdata = data_normalized)
+
+data <- cbind(cluster = cl$cluster, data.trans)
+clus_means <- aggregate(data, by = list(cl$cluster), mean)
+clus_means$cluster <- clus_means$cluster + 1
+rownames(clus_means) = clus_means$cluster
+clus_means = clus_means[,3:ncol(clus_means)]
+
+library(tidyverse)
+
+clus_means_long <- clus_means %>%
+  rownames_to_column() %>%
+  gather(colname, value, -rowname)
+head(clus_means_long)
+# lock in factor level order
+clus_means_long$colname <- factor(clus_means_long$colname, levels = colnames(clus_means))
+clus_means_long$rowname <- factor(clus_means_long$rowname, levels=rev(sort(unique(clus_means_long$rowname))))
+png(file.path(mappingFolder,'NHP_BG_204_349_AIT115_umap_roi_pcacomps.png'), width = 2000, height = 1000)
+ggplot(clus_means_long, aes(x = colname, y = rowname, fill = value)) +
+  geom_tile() + theme(text = element_text(size=30))
+dev.off()
+
+# Top loadings
+for (i in 1:5) {
+  temp <- sort(data.pca$rotation[,i], decreasing=TRUE)     # These are the loadings
+  print(paste0('PCA comp ', i))
+  print(names(temp)[1:10])
+}
+
+
+
+# Can get top genes in each PC
 
 # Debugging before subsetting
 hist_info <- hist(layout[,2]) 
