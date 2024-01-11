@@ -1002,6 +1002,8 @@ for (clus in sort(unique(cl$cluster))) {
     print(mean(anno_sub$score.Corr))
     print("mean_ngenes")
     print(mean(anno_sub$Genes.Detected))
+    print("percent intronic")
+    print(mean(anno_sub$percent_reads_aligned_to_introns))
     
     type_counts <- table(anno_sub$level3.subclass_Tree)
     print('subclass_Tree')
@@ -1025,14 +1027,15 @@ for (clus in sort(unique(cl$cluster))) {
     wglia <- table(anno_sub$level3.subclass_Corr_wglia)
     print(wglia)
     
-    print('Post-patch classification')
-    nuc <- table(anno_sub$postPatch_classification)
+    print('postPatch')
+    #nuc <- table(anno_sub$postPatch_classification)
+    nuc <- table(anno_sub$postPatch)
     print(nuc)
     print(nuc/sum(nuc))
     
     anno_sub_cultured <- anno_sub[anno_sub$cell_specimen_project=='qIVSCC-METc',]
-    nuc <- table(anno_sub_cultured$postPatch_classification)
-    print('Post-patch classification (culture neurons)')
+    nuc <- table(anno_sub_cultured$postPatch)
+    print('postPatch (culture neurons)')
     print(nuc/sum(nuc))
     print('mean NMS (cultured)')
     print(mean(anno_sub_cultured$marker_sum_norm_label))
@@ -1042,21 +1045,32 @@ for (clus in sort(unique(cl$cluster))) {
     write.csv(clus5_list, file.path(mappingFolder,'NHP_BG_204_349_umap_cluster5.csv')) 
     write.csv(anno_sub, file.path(mappingFolder,'NHP_BG_204_349_umap_cluster5_meta.csv')) 
     anno_sub_OPC = anno_sub[anno_sub$level3.subclass_Tree_wglia=='Oligos_Pre',]
-    nuc <- table(anno_sub_OPC$postPatch_classification)
-    print('Post-patch classification for mappings to Oligos_Pre')
+    nuc <- table(anno_sub_OPC$postPatch)
+    print('postPatch for mappings to Oligos_Pre')
     print(nuc)
+    print('percent intronic for mappings to Oligos_Pre')
+    print(mean(anno_sub_OPC$percent_reads_aligned_to_introns))
   }
+  if (clus == 3){
+    clus4_list = anno_sub$cell_name
+    write.csv(clus4_list, file.path(mappingFolder,'NHP_BG_204_349_umap_cluster4.csv')) 
+    write.csv(anno_sub, file.path(mappingFolder,'NHP_BG_204_349_umap_cluster4_meta.csv')) 
+    }
 }
 
 anno_sub_cultured <- annoNew[annoNew$cell_specimen_project=='qIVSCC-METc',]
-nuc1 <- table(anno_sub_cultured$postPatch_classification)
-print('Post-patch classification (all culture neurons)')
+#nuc1 <- table(anno_sub_cultured$postPatch_classification)
+#print('Post-patch classification (all culture neurons)')
+nuc1 <- table(anno_sub_cultured$postPatch)
+print('postPatch (all culture neurons)')
 print(nuc1)
 print(nuc1/sum(nuc1))
 
 anno_sub_acute <- annoNew[annoNew$cell_specimen_project=='qIVSCC-METa',]
-nuc2 <- table(anno_sub_acute$postPatch_classification)
-print('Post-patch classification (all acute neurons)')
+#nuc2 <- table(anno_sub_acute$postPatch_classification)
+#print('Post-patch classification (all acute neurons)')
+nuc2 <- table(anno_sub_acute$postPatch)
+print('postPatch (all acute neurons)')
 print(nuc2)
 print(nuc2/sum(nuc2))
 
@@ -1097,6 +1111,9 @@ clus_means$cluster <- clus_means$cluster + 1
 rownames(clus_means) = clus_means$cluster
 clus_means = clus_means[,3:ncol(clus_means)]
 
+wclusPCA <- cbind(annoNew, data[,1:6])
+write.csv(wclusPCA, file.path(mappingFolder,'NHP_BG_204_349_AIT115_ann_map_roi_QC_wglia_clus_PCA.csv')) 
+
 library(tidyverse)
 
 clus_means_long <- clus_means %>%
@@ -1108,7 +1125,7 @@ clus_means_long$colname <- factor(clus_means_long$colname, levels = colnames(clu
 clus_means_long$rowname <- factor(clus_means_long$rowname, levels=rev(sort(unique(clus_means_long$rowname))))
 png(file.path(mappingFolder,'NHP_BG_204_349_AIT115_umap_roi_pcacomps.png'), width = 2000, height = 1000)
 ggplot(clus_means_long, aes(x = colname, y = rowname, fill = value)) +
-  geom_tile() + theme(text = element_text(size=30))
+  geom_tile() + theme(text = element_text(size=30)) + xlab("Principal component") + ylab("Cluster #")
 dev.off()
 
 # Top loadings
@@ -1118,9 +1135,44 @@ for (i in 1:5) {
   print(names(temp)[1:10])
 }
 
-
-
+clus_VCAN <- aggregate(data_normalized[,'VCAN'], by = list(cl$cluster), mean)
+clus_STK32A <- aggregate(data_normalized[,'STK32A'], by = list(cl$cluster), mean)
 # Can get top genes in each PC
+
+# ICA
+# Can try doing this on the PCAs
+install.packages("fastICA")
+library("fastICA")
+data.ica <- fastICA(t(data.trans), 8, verbose = TRUE)
+#data.ica <- fastICA(t(data_normalized), 8, verbose = TRUE)
+
+data <- cbind(cluster = cl$cluster, t(data.ica$A))
+clus_means <- aggregate(data, by = list(cl$cluster), mean)
+clus_means$cluster <- clus_means$cluster + 1
+rownames(clus_means) = clus_means$cluster
+clus_means = clus_means[,3:ncol(clus_means)]
+
+#wclusPCA <- cbind(annoNew, data[,1:6])
+#write.csv(wclusPCA, file.path(mappingFolder,'NHP_BG_204_349_AIT115_ann_map_roi_QC_wglia_clus_PCA.csv')) 
+
+clus_means_long <- clus_means %>%
+  rownames_to_column() %>%
+  gather(colname, value, -rowname)
+head(clus_means_long)
+# lock in factor level order
+clus_means_long$colname <- factor(clus_means_long$colname, levels = colnames(clus_means))
+clus_means_long$rowname <- factor(clus_means_long$rowname, levels=rev(sort(unique(clus_means_long$rowname))))
+png(file.path(mappingFolder,'NHP_BG_204_349_AIT115_umap_roi_icacomps.png'), width = 2000, height = 1000)
+ggplot(clus_means_long, aes(x = colname, y = rowname, fill = value)) +
+  geom_tile() + theme(text = element_text(size=30)) + xlab("ICA (on PCA) component") + ylab("Cluster #")
+dev.off()
+
+# Top loadings
+for (i in 1:8) {
+  temp <- sort(data.ica$S[,i], decreasing=TRUE)     # These are the loadings
+  print(paste0('ICA comp ', i))
+  print(names(temp)[1:10])
+}
 
 # Debugging before subsetting
 hist_info <- hist(layout[,2]) 
