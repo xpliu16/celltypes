@@ -1,21 +1,9 @@
-refFolder <- "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_115"
-#mappingFolder <- paste0(refFolder,"/mapping/")
+#refFolderList <- list("/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_115")
+refFolderList <- list("/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/CrossAreal_MTG",
+"/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/CrossAreal_M1")
 mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115/"
-#dir.create(mappingFolder, showWarnings=FALSE)
-data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object"
-
-#if (!require("BiocManager", quietly = TRUE))
-#    install.packages("BiocManager")
-
-#BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
-#                       'limma', 'lme4', 'S4Vectors', 'SingleCellExperiment',
-#                       'SummarizedExperiment', 'batchelor', 'HDF5Array',
-#                       'terra', 'ggrastr'))
 
 BiocManager::install("EnhancedVolcano")
-
-#install.packages("devtools")
-#devtools::install_github('cole-trapnell-lab/monocle3')
 
 #browseVignettes("EnhancedVolcano")
 
@@ -45,34 +33,32 @@ goi = read.csv(file.path(mappingFolder,'VGIC_short.csv'))   # Genes of interest
 
 # Use complete taxonomy
 #AIT.anndata <- read_h5ad(file.path(refFolder, "NHP_BG_AIT115_complete.h5ad"))
-AIT.anndata <- loadTaxonomy(refFolder)
+#AIT.anndata<-loadTaxonomy(refFolder)
+anndataList <- list()    # Raw data
+#annoList <- list()         # Metadata
 
-annoBG <- read_feather(file.path(refFolder, "anno.feather"))
-
-# Striatal subclasses only (at least 5% of all cells are in dSTR or vSTR)
-subclasses = c("D1-Matrix", "D2-Striosome", "D2-Matrix", "D2-Hybrid-MCHR2", 
-             "D1D2-Hybrid", "LHX6-TAC3-PLPP4", "D1-Striosome", "SLC17A7-SATB2",
-             "PVALB-COL19A1-ST18", "LHX6-SATB1", "CCK-VIP-TAC3", "CCK-FBXL7",
-             "SST-RSPO2", "SST_Chodl", "D2-ShellOT", "CHAT", "D1-ShellOT",
-             "D1-NUDAP", "TAC3-LHX8-PLPP4", "MEIS2", "SN_STH_GPe-MEIS2-OTX2",
-             "LHX6-LHX8-GBX1", "LHX6_SST", "NAc-CCK-SEMA3A", "GP-LHX6",
-             "SST-ADARB2", "SLC17A6", "WDR49-ADAM12", "D1-ICj", "NAc-LHX8")   
+for (refFolder in refFolderList) {
+  pathspl <- strsplit(refFolder,'/')[[1]]
+  annName <- pathspl[length(pathspl)]
+  anndataList[[annName]] <- loadTaxonomy(refFolder)
+  #annoList[[annName]] <- read_feather(file.path(refFolder, "anno.feather"))
+}
 
 FCcutoff = 0.5    # minimum log2 fold-change for DEG
 
-deg_comp <- function(Expr.dat, annoBG, subclasses, goi, type1, type2, level, FCcutoff) {
+deg_comp <- function(Expr.dat, anno, goi, type1, type2, level, FCcutoff) {
 
   #load(paste(refFolder,"/patchseq/QC_markers.RData",sep = ""))
-  #annoBG <- annoBG[match(Expr.dat$sample_id,annoBG$sample_id),]
-  #annoBG <- annoBG[match(rownames(Expr.dat),annoBG$sample_id),]
-  annoBG <- annoBG[match(rownames(Expr.dat),annoBG$cellNames_label),] 
+  #anno <- anno[match(Expr.dat$sample_id,anno$sample_id),]
+  #anno <- anno[match(rownames(Expr.dat),anno$sample_id),]
+  anno <- anno[match(rownames(Expr.dat),anno$cellNames_label),] 
 
-  kpsubclass<-is.element(annoBG$level3.subclass_label,subclasses)
-  annoBG<-annoBG[kpsubclass,]
-  Expr.dat<-Expr.dat[kpsubclass,]
-  #anno_type = annoBG$level3.subclass_label
-  anno_type = annoBG[[level]]
-  anno_type_color = annoBG[[level %>% str_replace("label", "color")]]
+  #kpsubclass<-is.element(anno$level3.subclass_label,subclasses)
+  #anno<-anno[kpsubclass,]
+  #Expr.dat<-Expr.dat[kpsubclass,]
+  #anno_type = anno$level3.subclass_label
+  anno_type = anno[[level]]
+  anno_type_color = anno[[level %>% str_replace("label", "color")]]
 
   # Optional: subset to ion channel genes
   genesSamp1 <- is.element(colnames(Expr.dat),goi$Approved.symbol)
@@ -100,25 +86,25 @@ deg_comp <- function(Expr.dat, annoBG, subclasses, goi, type1, type2, level, FCc
   expr_ratio = t1_mean_expr/t2_mean_expr
   Expr.dat_norm[,ident_vec == 'type2'] <- Expr.dat_norm[,ident_vec == 'type2'] * expr_ratio
   # check
-  # t2_mean_expr_norm = mean(Expr.dat[,annoBG$level3.subclass_label == type2])
+  # t2_mean_expr_norm = mean(Expr.dat[,anno$level3.subclass_label == type2])
 
   ## For curiosity to compare p-vals, subsample data
   #keepinds = anno_type == type1 | anno_type == type2
   ##sample_factor = 10
   ##keepinds = sample(which(keepinds), round(sum(keepinds)/sample_factor))
   #Expr.dat_norm <- Expr.dat_norm[,keepinds]   # Or Expr.dat if not normalized
-  #annoBG <- annoBG[keepinds,]ssh -N -L 8787:n265:8787 xiaoping.liu@hpc-login
+  #anno <- anno[keepinds,]ssh -N -L 8787:n265:8787 xiaoping.liu@hpc-login
   #anno_type <- anno_type[keepinds]
   #anno_type_color <-anno_type_color[keepinds]
 
   dataBG_all<-Expr.dat_norm
-  annoBG_all<-annoBG
+  anno_all<-anno
 
   #brain.data     <- cbind(dataBG_all[keepGenes,],dataBG_all_PS[keepGenes,])  # Include only genes subsetted above
   brain.data <- dataBG_all
   brain.metadata <- data.frame(subclass = anno_type,
                               subclass_color = anno_type_color,
-            area = annoBG_all$roi_label)
+            area = anno_all$roi_label)
   rownames(brain.metadata) <- colnames(brain.data)
 
   ## Construct data set lists
@@ -135,24 +121,60 @@ deg_comp <- function(Expr.dat, annoBG, subclasses, goi, type1, type2, level, FCc
   return (de.markers)
 }
 
-Expr.dat <- AIT.anndata$layers['counts']
-allMarkers = c()
-comparisons = list(list('MSN', NULL, 'level1.class_label', 'MSN vs rest'), 
-list('PVALB-COL19A1-ST18', NULL, 'level3.subclass_label', 'FS IN vs rest'), 
-list('D1-Matrix', 'D2-Matrix', 'level3.subclass_label', 'D1-Matrix vs D2-Matrix'),
-list(c("D1-Matrix", "D2-Matrix"), c("D1-Striosome", "D2-Striosome"), 'level3.subclass_label', 'Matrix vs Striosome'),
-list(c("D1-Matrix", "D2-Matrix"), c("D1-ShellOT", "D2-ShellOT"), 'level3.subclass_label', 'Dorsal vs Ventral'),
-list('D1D2-Hybrid', c("D1-Matrix", "D2-Matrix", "D1-Striosome", "D2-Striosome"), 'level3.subclass_label', 'D1D2-Hybrid vs other dorsal MSN'),
-list(c("LHX6-TAC3-PLPP4","TAC3-LHX8-PLPP4"), NULL, 'level3.subclass_label', 'TAC3-PLPP4 vs rest'),
-list("SST_Chodl", NULL, 'level3.subclass_label', 'SST Chodl vs rest'),
-list("CHAT", NULL, 'level3.subclass_label', 'CHAT vs rest'))
+allMarkers <- c()
+Expr.dat.List <- list()
+annoAll <- data.frame()
+#subset=NULL   # ~48640 is ngenes, slightly different between taxonomies
+# Striatal subclasses only (at least 5% of all cells are in dSTR or vSTR)
+#subset = list('level3.subclass_label', c("D1-Matrix", "D2-Striosome", "D2-Matrix", 
+#             "D2-Hybrid-MCHR2", "D1D2-Hybrid", "LHX6-TAC3-PLPP4", "D1-Striosome", 
+#             "SLC17A7-SATB2", "PVALB-COL19A1-ST18", "LHX6-SATB1", "CCK-VIP-TAC3", 
+#             "CCK-FBXL7", "SST-RSPO2", "SST_Chodl", "D2-ShellOT", "CHAT", "D1-ShellOT",
+#             "D1-NUDAP", "TAC3-LHX8-PLPP4", "MEIS2", "SN_STH_GPe-MEIS2-OTX2",
+#             "LHX6-LHX8-GBX1", "LHX6_SST", "NAc-CCK-SEMA3A", "GP-LHX6",
+#             "SST-ADARB2", "SLC17A6", "WDR49-ADAM12", "D1-ICj", "NAc-LHX8")   
+
+subset = list('CrossArea_subclass_label', c('L2/3 IT'))
+genes = list()
+for (ann in names(anndataList)) {
+  AIT.anndata = anndataList[[ann]]
+  Expr.dat <- AIT.anndata$layers['counts']
+  anno = AIT.anndata$obs
+  if (!is.null(subset)){
+    subInds = is.element(anno[[subset[[1]]]], subset[[2]])
+    Expr.dat <- Expr.dat[subInds,]
+    anno <- anno[subInds,]  
+  }
+  print(dim(Expr.dat))
+  print(dim(anno))
+  Expr.dat.List[[ann]] <- Expr.dat
+  anno$ann_source = annName
+  annoAll <- rbind(annoAll, anno)
+  genes[[ann]] = colnames(Expr.dat)
+}
+genes = reduce(intersect, genes)
+Expr.dat.df <- data.frame()
+for (ann in annName) {
+  Expr.dat.df <- rbind(Expr.dat.df, Expr.dat.List[[ann]][,genes])
+} 
+
+comparisons = list(list('CrossAreal_M1', 'CrossAreal_MTG', 'ann_source', 'L2/3 IT: M1 vs MTG'))
+#comparisons = list(list('MSN', NULL, 'level1.class_label', 'MSN vs rest'), 
+#list('PVALB-COL19A1-ST18', NULL, 'level3.subclass_label', 'FS IN vs rest'), 
+#list('D1-Matrix', 'D2-Matrix', 'level3.subclass_label', 'D1-Matrix vs D2-Matrix'),
+#list(c("D1-Matrix", "D2-Matrix"), c("D1-Striosome", "D2-Striosome"), 'level3.subclass_label', 'Matrix vs Striosome'),
+#list(c("D1-Matrix", "D2-Matrix"), c("D1-ShellOT", "D2-ShellOT"), 'level3.subclass_label', 'Dorsal vs Ventral'),
+#list('D1D2-Hybrid', c("D1-Matrix", "D2-Matrix", "D1-Striosome", "D2-Striosome"), 'level3.subclass_label', 'D1D2-Hybrid vs other dorsal MSN'),
+#list(c("LHX6-TAC3-PLPP4","TAC3-LHX8-PLPP4"), NULL, 'level3.subclass_label', 'TAC3-PLPP4 vs rest'),
+#list("SST_Chodl", NULL, 'level3.subclass_label', 'SST Chodl vs rest'),
+#list("CHAT", NULL, 'level3.subclass_label', 'CHAT vs rest'))
 #comparisons = list(list('D1-Matrix', 'D2-Matrix', 'level3.subclass_label'))
 #Expr.dat <- AIT.anndata$X   # These are already log transformed
 #Expr.dat <- AIT.anndata$layers['UMIs']   # For complete taxonomy (but doesn't match anno)
 
 for (comp in comparisons){
   print(paste0(comp[1], ' versus ', comp[2]))
-  markers = deg_comp(Expr.dat, annoBG, subclasses, goi, comp[[1]], comp[[2]], comp[[3]], FCcutoff)
+  markers = deg_comp(Expr.dat, anno, goi, comp[[1]], comp[[2]], comp[[3]], FCcutoff)
   print(markers)
   temp <- markers$avg_log2FC
   allMarkers <- append(allMarkers, rownames(markers)[temp>FCcutoff])
@@ -220,8 +242,8 @@ genes = c("SCN9A", "SCN4B", "KCNQ5", "KCNAB1", "KCNC2",
              "CACNA2D3", "HCN1") 
 
 level = 'level3.subclass_label'
-anno_type = annoBG[[level]]
-anno_type_color = annoBG[[level %>% str_replace("label", "color")]]
+anno_type = anno[[level]]
+anno_type_color = anno[[level %>% str_replace("label", "color")]]
 keepinds = is.element(anno_type, subclass_short)
 Expr.dat <- Expr.dat[keepinds,]  # May be other dimension if running from contiguous
 #Expr.dat <- t(Expr.dat)
@@ -268,18 +290,18 @@ library(monocle)
 #Expr.dat <- AIT.anndata$layers['counts']
 
 Expr.sub <- Expr.dat[,Markers_short]
-Expr.sub <- Expr.sub[is.element(annoBG$level3.subclass_label,subclass_short),]
+Expr.sub <- Expr.sub[is.element(anno$level3.subclass_label,subclass_short),]
 Expr.sp <- t(as.matrix(Expr.sub))
 write.csv(Expr.sp, file.path(mappingFolder, 'DEG/Expr_short.csv'))
 Expr.sp <- as(Expr.sp, "sparseMatrix") 
 
 fd <- data.frame(gene_short_name=rownames(Expr.sp))
-annoBG <- as.data.frame(annoBG[is.element(annoBG$level3.subclass_label,subclass_short),])
+anno <- as.data.frame(anno[is.element(anno$level3.subclass_label,subclass_short),])
 write.csv(Expr.sp, file.path(mappingFolder, 'DEG/Anno_short.csv'))
-rownames(annoBG) = colnames(Expr.sp) 
+rownames(anno) = colnames(Expr.sp) 
 rownames(fd) = rownames(Expr.sp)
 cds <- newCellDataSet(Expr.sp,
-                         phenoData = new("AnnotatedDataFrame", data = annoBG),
+                         phenoData = new("AnnotatedDataFrame", data = anno),
                          featureData = new("AnnotatedDataFrame", data = fd))
 
 
@@ -287,7 +309,7 @@ cds <- newCellDataSet(Expr.sp,
 #                 gene_short_name %in% allMarkers)),]
 plot_genes_violin(cds, min_expr=0.1)
 
-# group_cells_by=annoBG["level3.subclass_Tree"], 
+# group_cells_by=anno["level3.subclass_Tree"], 
 
 #Need Monocle3 - hard to install
 
@@ -313,7 +335,7 @@ source("https://z.umn.edu/archived-seurat")    # Get Seurat V2
 
 ## Construct data set lists
 brain.data <- Expr.dat
-brain.metadata <- annoBG
+brain.metadata <- anno
 
 brain <- CreateSeuratObject(counts = brain.data, meta.data = brain.metadata)
 # Should you transform counts?
