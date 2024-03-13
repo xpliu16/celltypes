@@ -189,8 +189,8 @@ comparisons = list(list(#type1 = 'CrossAreal_V1',
                         type1 = names(anndataList)[1],
                         type2 = names(anndataList)[2],
                         colname = 'ann_source', 
-                        title = 'L23IT:_V1_vs_MTG',
-                        splitby = 'CrossArea_cluster_label')) 
+                        title = 'L23IT:MTG_vs_M1',
+                        splitby = 'CrossArea_subclass_label')) 
 
 comparisons = list(list(type1 = 'L2/3 IT_1', 
                         type2 = c('L2/3 IT_2','L2/3 IT_5','L2/3 IT_6'), 
@@ -380,7 +380,7 @@ psig = 0.01
 coeff_thresh = 0.5
 #coeff_thresh = 0.4  # for glmer
 
-#for (gene in c('KCNQ5','DPP10')){
+#for (gene in c('KCNQ5')){
 for (gene in colnames(Expr.dat.log)){
   gene <- as.symbol(gene)
   #mod<-eval(bquote(glm(.(gene) ~ region*cluster, family = poisson, data = model_data)))
@@ -445,7 +445,7 @@ for (gene in colnames(Expr.dat.log)){
   terms = rownames(summary(mod)$coefficients)
   terms_sub = c(terms[grepl("regionCrossAreal_MTG:cluster", terms)],terms[grepl("regionCrossAreal_V1:cluster", terms)])
   regxclust <- c(regxclust,
-                 any((abs(coef(summary(mod))[c(terms_sub),1]) > 0.4)
+                 any((abs(coef(summary(mod))[c(terms_sub),1]) > coeff_thresh)
                      & (p.adjust(pval_i[c(terms_sub)], method = "bonferroni") < psig)))
   
   #for glm():
@@ -459,7 +459,7 @@ for (gene in colnames(Expr.dat.log)){
   Pr_F <- c(Pr_F, list(Pr_i))
   Pr_regional <- c(Pr_regional, p.adjust(Pr_i['region', 'Pr(>F)'], method = "bonferroni") < psig)
   Pr_cluster <- c(Pr_cluster, p.adjust(Pr_i['cluster', 'Pr(>F)'], method = "bonferroni") < psig)
-  donor_ef <- c(donor_ef, ranef(mod)$donor)
+  donor_ef <- c(donor_ef, ranef(mod))
 }  
 
 mod_df <- data.frame(row.names = colnames(Expr.dat.log), 
@@ -471,35 +471,274 @@ mod_df <- data.frame(row.names = colnames(Expr.dat.log),
                      Pr_cluster = unlist(Pr_cluster))
                      #chisq_regional = unlist(chisq_regional),
                      #chisq_cluster = unlist(chisq_cluster))
+
+donor = do.call(cbind, donor_ef)
+donor_df = data.frame(t(donor))
+p1 <- ggplot(donor_df, aes(x=X1)) + geom_histogram() + scale_x_continuous(limits = c(-1, 1))
+p2 <- ggplot(donor_df, aes(x=X2)) + geom_histogram() + scale_x_continuous(limits = c(-1, 1))
+p3 <- ggplot(donor_df, aes(x=X3)) + geom_histogram() + scale_x_continuous(limits = c(-1, 1))
+p4 <- ggplot(donor_df, aes(x=X4)) + geom_histogram() + scale_x_continuous(limits = c(-1, 1))
+p5 <- ggplot(donor_df, aes(x=X5)) + geom_histogram() + scale_x_continuous(limits = c(-1, 1))
+plot_grid(p1, p2, p3, p4, p5, labels=c("Donor1", "Donor2", "Donor3", "Donor4", "Donor5"), ncol = 1, nrow = 5)
+
+
+library(VennDiagram)
+set0 <- colnames(Expr.dat.log)
+set1 <- colnames(Expr.dat.log)[unlist(regional)]
+set2 <- colnames(Expr.dat.log)[unlist(cluster)]
+set3 <- colnames(Expr.dat.log)[unlist(reg_clust)]
+set4 <- colnames(Expr.dat.log)[unlist(regxclust)]
+set5 <- colnames(Expr.dat.log)[unlist(Pr_regional)]
+set6 <- colnames(Expr.dat.log)[unlist(Pr_cluster)]
+myCol <- brewer.pal(3, "Set3")
+v<-venn.diagram(
+  x = list(set0, set1, set2),
+  category.names = c("All" , "Region_coef" , "Cluster_coef"),
+  filename = NULL,
+  output=TRUE,
+  fill=myCol,
+  lty = 'blank',
+  cat.cex = 0.9,
+  cat.fontface = "bold",
+  cat.default.pos = "outer",
+)
+png("/home/xiaoping.liu/Desktop/venn_diagram1.png", width=5, height=4, units='in', res=150)
+grid.newpage()
+pushViewport(viewport(width=unit(0.8, "npc"), height = unit(0.9, "npc")))
+grid.draw(v)
+dev.off()
+
+myCol <- brewer.pal(3, "Set3")
+v <-venn.diagram(
+  x = list(set1, set3, set4),
+  category.names = c("Region" , "Region-specialized cluster", "Region x cluster"),
+  filename = NULL,
+  output=TRUE,
+  fill=myCol,
+  lty = 'blank',
+  cat.cex = 0.9,
+  cat.fontface = "bold",
+  cat.default.pos = "outer"
+)
+png("/home/xiaoping.liu/Desktop/venn_diagram2.png", width=5, height=4, units='in', res=150)
+grid.newpage()
+pushViewport(viewport(width=unit(0.8, "npc"), height = unit(0.9, "npc")))
+grid.draw(v)
+dev.off()
+
+myCol <- brewer.pal(4, "Set3")
+v<-venn.diagram(
+  x = list(set1, set2, set5, set6),
+  category.names = c("Region_coef", "Cluster_coef", "Region_ANOVA", "Cluster_ANOVA"),
+  filename = NULL,
+  output=TRUE,
+  fill=myCol,
+  lty = 'blank',
+  cat.cex = 0.9,
+  cat.fontface = "bold",
+  cat.default.pos = "outer"
+)
+png("/home/xiaoping.liu/Desktop/venn_diagram3.png", width=5, height=4, units='in', res=150)
+grid.newpage()
+pushViewport(viewport(width=unit(0.8, "npc"), height = unit(0.9, "npc")))
+grid.draw(v)
+dev.off()
+
+# Count
+sum(unlist(Pr_cluster))
+
 mod_df <- cbind(glm_df,t(do.call(cbind, Pr_F)), do.call(rbind,pvals))
 # If probabilities are not significant, blank out the coefficient as NA
 temp <- do.call(rbind, coeffs)
 temp2 <- do.call(rbind,pvals)
-temp[temp2>psig] = NA
+temp[temp2>psig] = NA     
+temp <-temp[ , -which(colnames(temp) == "(Intercept)")]
+col_order = c(1:13,14,16,18,20,15,17,19)
+temp <- temp[, col_order]
+
 mod_df2 <- data.frame(temp, row.names = colnames(Expr.dat.log))
 mod_df2$max_region_coeff = pmax(abs(mod_df2$regionCrossAreal_MTG), 
                                 abs(mod_df2$regionCrossAreal_V1), na.rm = TRUE) 
 mod_df2 <- mod_df2[order(-mod_df2$max_region_coeff),]
-library(tidyverse)
-mod_df3 <- mod_df2 %>%
-  rownames_to_column() %>%
-  gather(colname, value, -rowname)
-ggplot(mod_df3, aes(x = colname, y = rowname, fill = value)) +
-  geom_tile() +
-  labs(title = "Heatmap",
-       x = "Coeff",
-       y = "Gene")
-# Try clustering heatmap
-# Sort by descending for max V1 and MTG coeff, take top 20
-# Sort by descending for mean abs 
 
-sum(unlist(regional))
+# Calculate bias to make 0 equal to white on divergent color scale
+b <- log(min(mod_df2[1:30,], na.rm=T)/(min(mod_df2[1:30,], na.rm=T)-max(mod_df2[1:30,], na.rm=T)), base = 0.5)
+divergent_palette <- colorRampPalette(c("blue", "white", "red"), bias=b)
+pheatmap(mod_df2[1:30,1:(dim(mod_df2)[2]-1)], cluster_rows = FALSE, 
+         cluster_cols=FALSE, color = divergent_palette(n=100))
+
+mod_df2$max_regclust_coeff = pmax(abs(mod_df2$clusterL2.3.IT_2), 
+                                abs(mod_df2$clusterL2.3.IT_3), 
+                                abs(mod_df2$clusterL2.3.IT_4),
+                                abs(mod_df2$clusterL4.IT_2),
+                                abs(mod_df2$clusterL4.IT_3),
+                                abs(mod_df2$clusterL4.IT_4),
+                                abs(mod_df2$clusterL4.IT_6),na.rm = TRUE) 
+mod_df2 <- mod_df2[order(-mod_df2$max_regclust_coeff),]
+
+b <- log(min(mod_df2[1:30,], na.rm=T)/(min(mod_df2[1:30,], na.rm=T)-max(mod_df2[1:30,], na.rm=T)), base = 0.5)
+divergent_palette <- colorRampPalette(c("blue", "white", "red"), bias=b)
+pheatmap(mod_df2[1:30,1:(dim(mod_df2)[2]-2)], cluster_rows = FALSE, 
+         cluster_cols=FALSE, color = divergent_palette(n=100))
+
+mod_df2$max_regxclust_coeff = pmax(abs(mod_df2$regionCrossAreal_MTG.clusterL2.3.IT_5), 
+                                  abs(mod_df2$regionCrossAreal_MTG.clusterL2.3.IT_6), 
+                                  abs(mod_df2$regionCrossAreal_MTG.clusterL4.IT_1),
+                                  abs(mod_df2$regionCrossAreal_MTG.clusterL4.IT_5),
+                                  abs(mod_df2$regionCrossAreal_V1.clusterL2.3.IT_5),
+                                  abs(mod_df2$regionCrossAreal_V1.clusterL2.3.IT_6),
+                                  abs(mod_df2$regionCrossAreal_V1.clusterL4.IT_1), na.rm = TRUE) 
+mod_df2 <- mod_df2[order(-mod_df2$max_regxclust_coeff),]
+
+b <- log(min(mod_df2[1:30,], na.rm=T)/(min(mod_df2[1:30,], na.rm=T)-max(mod_df2[1:30,], na.rm=T)), base = 0.5)
+divergent_palette <- colorRampPalette(c("blue", "white", "red"), bias=b)
+pheatmap(mod_df2[1:30,1:(dim(mod_df2)[2]-3)], cluster_rows = FALSE, 
+         cluster_cols=FALSE, color = divergent_palette(n=100))
+
+png(file.path("/home/xiaoping.liu/Desktop/ExprLMER_clust_heatmap.png"), width = 2000, height = 4000)
+temp <- do.call(rbind, coeffs)
+mod_df2 <- data.frame(temp[,1:dim(temp)[2]], row.names = colnames(Expr.dat.log))
+
+b <- log(min(mod_df2, na.rm=T)/(min(mod_df2, na.rm=T)-max(mod_df2, na.rm=T)), base = 0.5)
+divergent_palette <- colorRampPalette(c("blue", "white", "red"), bias=b)
+pheatmap(mod_df2, cluster_cols=FALSE, color = divergent_palette(n=100), fontsize=24)
+dev.off()
 
 # Sanity check expression
 foo <- merge(Expr.dat.df, annoAll, by.x = 'row.names', by.y = 'sample_id')
 log2fc = log2(mean(foo['CACNB2'][foo['ann_source']=='CrossAreal_M1']) + 1) -
                 log2(mean(foo['CACNB2'][foo['ann_source']=='CrossAreal_MTG']) + 1)
 # Note: this only checks if normalization by overall expression level is turned off
+
+p1 <- ggplot(donor_df, aes(x=X1)) + geom_histogram() + scale_x_continuous(limits = c(-1, 1))
+p2 <- ggplot(donor_df, aes(x=X2)) + geom_histogram() + scale_x_continuous(limits = c(-1, 1))
+p3 <- ggplot(donor_df, aes(x=X3)) + geom_histogram() + scale_x_continuous(limits = c(-1, 1))
+p4 <- ggplot(donor_df, aes(x=X4)) + geom_histogram() + scale_x_continuous(limits = c(-1, 1))
+p5 <- ggplot(donor_df, aes(x=X5)) + geom_histogram() + scale_x_continuous(limits = c(-1, 1))
+plot_grid(p1, p2, p3, p4, p5, labels=c("Donor1", "Donor2", "Donor3", "Donor4", "Donor5"), ncol = 1, nrow = 5)
+
+library(umap)
+#mapping.umap <- umap(Expr.dat.log)    # Only passed ion channel genes
+mapping.umap <- umap(Expr.dat.df)
+#all(rownames(Expr.dat.df) == rownames(Expr.dat.log))  # TRUE
+layout <- mapping.umap$layout
+#save(layout, file="/home/xiaoping.liu/Desktop/L23IT_L4IT_UMAP_allgenes.Rdata")
+save(layout, file="/home/xiaoping.liu/Desktop/L23IT_L4IT_UMAP_gene_subset.Rdata")
+# Shuffle rows so some categories don't end up all on top in scatterplot
+randorder = sample(dim(layout)[1], dim(layout)[1], replace = FALSE)
+layout <- layout[randorder,]
+annoAll_shuff <- annoAll[randorder,]
+Expr.dat.shuff_logCPM <- log2(Expr.dat.cpm+1)[randorder,]
+Expr.dat.shuff <- Expr.dat.df[randorder,]    # raw counts
+
+umap_df <- data.frame(layout, 
+                      cluster = annoAll_shuff$CrossArea_cluster_label, 
+                      subclass = annoAll_shuff$CrossArea_subclass_label,
+                      region = annoAll_shuff$ann_source,
+                      KCNMB2 = Expr.dat.shuff$KCNMB2,
+                      KCNMB2_logCPM = Expr.dat.shuff_logCPM$KCNMB2,
+                      CNGB1 = Expr.dat.shuff$CNGB1,
+                      CNGB1_logCPM = Expr.dat.shuff_logCPM$CNGB1,
+                      KCNH8 = Expr.dat.shuff$KCNH8,
+                      KCNH8_logCPM = Expr.dat.shuff_logCPM$KCNH8,
+                      SCN3B = Expr.dat.shuff$SCN3B,
+                      SCN3B_logCPM = Expr.dat.shuff_logCPM$SCN3B,
+                      KCNN3 = Expr.dat.shuff$KCNN3,
+                      KCNN3_logCPM = Expr.dat.shuff_logCPM$KCNN3,
+                      KCNIP1 = Expr.dat.shuff$KCNIP1,
+                      KCNIP1_logCPM = Expr.dat.shuff_logCPM$KCNIP1,
+                      KCNB2 = Expr.dat.shuff$KCNB2,
+                      KCNB2_logCPM = Expr.dat.shuff_logCPM$KCNB2)
+umap_df$cluster <- factor(umap_df$cluster, levels=c("L2/3 IT_1", "L2/3 IT_2",   
+                                                    "L2/3 IT_3", "L2/3 IT_4",
+                                                    "L2/3 IT_5", "L2/3 IT_6",  
+                                                    "L4 IT_1", "L4 IT_2",
+                                                    "L4 IT_3", "L4 IT_4",
+                                                    "L4 IT_5", "L4 IT_6"))
+
+png("/home/xiaoping.liu/Desktop/L23IT_L4IT_UMAP_cluster.png", width=4.8, height=4, units='in', res=150)
+p1<-ggplot(umap_df, aes(x=X1, y=X2, color=cluster)) + geom_point(size=0.5) + scale_color_brewer(palette="Set3")
+
+p1 + ggtitle("L2/3 IT and L4 IT cells\n(M1, MTG, and V1) Ion channel genes") +
+  xlab("UMAP1") + ylab("UMAP2") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+              panel.background = element_rect(fill = "#F2F2F2"), 
+              axis.line = element_line(color = "black"))
+
+dev.off()
+
+png("/home/xiaoping.liu/Desktop/L23IT_L4IT_UMAP_subclass.png", width=4.8, height=4, units='in', res=150)
+p1<-ggplot(umap_df, aes(x=X1, y=X2, color=subclass)) + geom_point(size=0.5) + scale_color_brewer(palette="Set3")
+
+p1 + ggtitle("L2/3 IT and L4 IT cells\n(M1, MTG, and V1) Ion channel genes") +
+  xlab("UMAP1") + ylab("UMAP2") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#F2F2F2"), 
+        axis.line = element_line(color = "black"))
+
+dev.off()
+
+png("/home/xiaoping.liu/Desktop/L23IT_L4IT_UMAP_region.png", width=4.8, height=4, units='in', res=150)
+p1<-ggplot(umap_df, aes(x=X1, y=X2, color=region)) + geom_point(size=0.5) + scale_color_brewer(palette="Set3")
+
+p1 + ggtitle("L2/3 IT and L4 IT cells\n(M1, MTG, and V1) Ion channel genes") +
+  xlab("UMAP1") + ylab("UMAP2") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#F2F2F2"), 
+        axis.line = element_line(color = "black"))
+
+dev.off()
+
+png("/home/xiaoping.liu/Desktop/L23IT_L4IT_UMAP_KCNMB2.png", width=4.8, height=4, units='in', res=150)
+p1<-ggplot(umap_df, aes(x=X1, y=X2, color=KCNMB2)) + geom_point(size=0.5)
+
+p1 + ggtitle("L2/3 IT and L4 IT cells\n(M1, MTG, and V1) Ion channel genes") +
+  xlab("UMAP1") + ylab("UMAP2") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#F2F2F2"), 
+        axis.line = element_line(color = "black"))
+
+dev.off()
+
+p1 <- ggplot(umap_df, aes(x=KCNMB2)) + geom_histogram()
+p2 <- ggplot(umap_df, aes(x=KCNMB2_logCPM)) + geom_histogram()
+plot_grid(p1, p2, ncol = 2, nrow = 1)
+
+#png("/home/xiaoping.liu/Desktop/L23IT_L4IT_UMAP_CNGB1.png", width=4.8, height=4, units='in', res=150)
+#p1<-ggplot(umap_df, aes(x=X1, y=X2, color=CNGB1)) + geom_point(size=0.5)
+
+#p1 + ggtitle("L2/3 IT and L4 IT cells\n(M1, MTG, and V1) Ion channel genes") +
+#  xlab("UMAP1") + ylab("UMAP2") +
+#  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+#        panel.background = element_rect(fill = "#F2F2F2"), 
+#        axis.line = element_line(color = "black"))
+#dev.off()
+
+plot_umap_expr <- function(umap_df, gene, path = '/home/xiaoping.liu/Desktop') {
+  fn = sprintf("L23IT_L4IT_UMAP_%s.png", gene)
+  print(file.path(path, fn))
+  png(file.path(path, fn), width=4.8, height=4, units='in', res=150)
+  gene <- as.symbol(gene)
+  p1<-eval(bquote(ggplot(umap_df, aes(x=X1, y=X2, color=.(gene))) + geom_point(size=0.5)))
+  
+  print(p1 + ggtitle("L2/3 IT and L4 IT cells\n(M1, MTG, and V1) Ion channel genes") +
+    xlab("UMAP1") + ylab("UMAP2") +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = "#F2F2F2"), 
+          axis.line = element_line(color = "black")))
+  
+  dev.off()
+}
+plot_umap_expr (umap_df, 'KCNN3')
+plot_umap_expr (umap_df, 'KCNN3_logCPM')
+
+umap_df$region <- gsub("^CrossAreal_","",umap_df$region)
+png("/home/xiaoping.liu/Desktop/L23IT_L4IT_UMAP_KCNMB2_violin.png", width=3, height=3, units='in', res=150)
+p <- ggplot(umap_df, aes(x=region, y=KCNMB2)) + geom_violin(bw = 0.3, color = 'darkblue', show.legend= FALSE) + ylab('KCNMB2') + xlab(NULL)
+#  theme(axis.title.y = element_text(angle=0), axis.title.x = element_text(), axis.text.y = element_text(angle = 0, size = 36)) +
+#  scale_y_discrete(position = "right") + coord_flip()
+p + stat_summary(fun.y=median, geom="point", size=2, color="red")
+dev.off()
 
 library(patchwork)
 subclass_short = c("D1-Matrix", "D2-Matrix", "D1-Striosome", "D2-Striosome", "D1-ShellOT",
