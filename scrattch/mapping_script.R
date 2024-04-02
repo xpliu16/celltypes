@@ -1,8 +1,14 @@
-refFolder <- "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_115"
-mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115"    # MAKE THIS MORE SPECIFIC
+#refFolder <- "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_115"
+refFolder <- "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_115_NCBI"
+refFolder <- "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/CrossAreal_MTG"
+mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115_NCBI"
+mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/Human_Cortical" 
+#mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115"  
+h5ad_fn <- "CrossAreal_MTG.h5ad"
 panelFolder <- "/home/xiaoping.liu/scrattch/MERFISH_panel"
 dir.create(mappingFolder, showWarnings=FALSE)
-data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object"
+data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/"
+data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Human/patchseq/R_Object/"
 
 suppressPackageStartupMessages({
   library("scrattch.mapping")
@@ -14,128 +20,153 @@ options(future.rng.onMisuse="ignore")
 library(scrattch.mapping)
 library (dplyr)
 
-# This remakes taxonomy from feather files and reloads, very slow, use read_h5ad instead for the time being
-AIT.anndata <- loadTaxonomy(refFolder)
+# CrossAreal taxonomies
+run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/CrossAreal_MTG",
+mappingFolder = "/home/xiaoping.liu/scrattch/mapping/Human_Cortical", 
+data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Human/patchseq/R_Object/",
+mode = "CrossAreal_MTG_patchseq",
+data_fn = "20240321_RSC-122-359_human_patchseq_star2.7",
+data_fn = "20240301_RSC-122-358_human_patchseq_star2.7"
+h5ad_fn = "CrossAreal_MTG.h5ad")
+class_colname = "Class_label"
+neigh_colname = NULL
+subclass_colname = "CrossArea_subclass_label" 
+cluster_colname = "CrossArea_cluster_label" 
 
-## Add in the off.target annotation.
-AIT.anndata$obs$off_target = AIT.anndata$obs$level1.class_label
+run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode, h5ad_fn = NULL) {
+    # This remakes taxonomy from feather files and reloads, very slow, use read_h5ad instead for the time being
+    if (is.null(h5ad_fn)) {
+        AIT.anndata <- loadTaxonomy(refFolder)
+    } else {
+        AIT.anndata <- loadTaxonomy(refFolder, h5ad_fn)
+    }
 
-## Setup the taxonomy for patchseqQC to infer off.target contamination
-#AIT.anndata = buildPatchseqTaxonomy(AIT.anndata,
-#                                    mode.name = "patchseq", ## Give a name to off.target filterd taxonomy
-#                                    subsample = 100, ## Subsampling is only for PatchseqQC contamination calculation.
-#                                    subclass.column = "level3.subclass_label", ## Typically this is `subclass_label` but tasic2016 has no subclass annotation.
-#                                    class.column = "off_target", ## The column by which off-target types are determined.
-#                                    off.target.types = c("NN"), ## The off-target class.column labels for patchseqQC.
-#                                    num.markers = 50, ## Number of markers for each annotation in `class_label`
-#                                    taxonomyDir = refFolder)
-
-AIT.anndata = mappingMode(AIT.anndata, mode="patchseq")
-
-load(paste0(data_dir, "/20231219_RSC-204-350_macaque_patchseq_star2.7_cpm.Rdata"))
-load(paste0(data_dir, "/20231219_RSC-204-350_macaque_patchseq_star2.7_samp.dat.Rdata"))
-
-query.metadata <- samp.dat
-counts      <- cpmR   # Genes are rows, samples are columns
-
-query.counts   <- counts
-query.data   <- logCPM(query.counts)
-
-# Put annotations and counts in the same order
-query.metadata <- query.metadata[match(colnames(query.data),query.metadata$exp_component_name),] 
-rownames(query.metadata) <- query.metadata$exp_component_name  
-
-## Get marker genes from dendrogram
-#load(AIT.anndata$uns$dend)
-#dend = reference$dend
-dend <- readRDS(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]])
-#dend_file = paste0(refFolder,'/dend.RData')
-#dend <- readRDS(dend_file)
-allMarkers = unique(unlist(get_dend_markers(dend)))
-
-## Alternative get genes from MERFISH panel
-#panel_df = read.csv(file.path(panelFolder, "AIT_115_MERFISH_panel.xlsx"))
+    ## Add in the off.target annotation.
+    #AIT.anndata$obs$off_target = AIT.anndata$obs$level1.class_label
 
 
-## Subset query data to just those markers
-query.data = query.data[intersect(rownames(query.data), allMarkers),]
+    ## Setup the taxonomy for patchseqQC to infer off.target contamination
+    #AIT.anndata = buildPatchseqTaxonomy(AIT.anndata,
+    #                                    mode.name = "patchseq", ## Give a name to off.target filterd taxonomy
+    #                                    subsample = 100, ## Subsampling is only for PatchseqQC contamination calculation.
+    #                                    subclass.column = "level3.subclass_label", ## Typically this is `subclass_label` but tasic2016 has no subclass annotation.
+    #                                    class.column = "off_target", ## The column by which off-target types are determined.
+    #                                    off.target.types = c("NN"), ## The off-target class.column labels for patchseqQC.
+    #                                    num.markers = 50, ## Number of markers for each annotation in `class_label`
+    #                                    taxonomyDir = refFolder)
 
-## Identify the offtarget cell types manually.
-print(unique(AIT.anndata$obs$level1.class_label))
+    AIT.anndata = mappingMode(AIT.anndata, mode=mode)
 
-query.mapping <- taxonomy_mapping(AIT.anndata= AIT.anndata,
-                                  query.data = query.data, 
-                                  corr.map   = TRUE, # Flags for which mapping algorithms to run
-                                  tree.map   = TRUE, 
-                                  seurat.map = FALSE, 
-                                  label.cols = c("level1.class_label", "level2.neighborhood_label", "level3.subclass_label", "cluster_label")
-)
+    load(paste0(data_dir, paste0(data_fn, "_cpm.Rdata")))
+    load(paste0(data_dir, paste0(data_fn, "_samp.dat.Rdata")))
 
-write.csv(query.mapping, file.path(mappingFolder,"NHP_BG_204_350_AIT115_mapping.csv"), row.names=FALSE)
-save(query.mapping, file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_mapping.Rdata"))
+    query.metadata <- samp.dat
+    counts      <- cpmR   # Genes are rows, samples are columns
 
-# Variable renaming
-#clusters  <- unique(query.mapping$cluster)   
-clusters <- unique(AIT.anndata$uns$clusterInfo$cluster_label)
-#subclass_levels <- unique(query.mapping$subclass_Corr)
-#subclass_levels <- unique(AIT.anndata$uns$clusterInfo$subclass_label)
+    query.counts   <- counts
+    query.data   <- logCPM(query.counts)
 
-annotations_mapped <- merge(x = query.mapping, y = query.metadata, by.x = 0, by.y = 0, all=TRUE) 
-#annotations_mapped <- merge(x = query.mapping, y = query.metadata, by.x = 0, by.y = "exp_component_name", all=TRUE) 
-# Alt hack:
-#rownames(query.mapping) = rownames(query.metadata)
-#annotations_mapped <- merge(x = query.mapping, y = query.metadata, by.x = 0, by.y = 0, all=TRUE) 
-# annotations_mapped$clusters <- factor(annotations_mapped$cluster_Tree, levels=clusters)
-# annotations_mapped$class   <- annotations_mapped$class_Tree
-# annotations_mapped$class[!is.element(annotations_mapped$class,c("IN","MSN"))] = "Non-neuronal"
-annotations_mapped <- annotations_mapped[match(rownames(query.metadata),annotations_mapped$exp_component_name),]   # merge resorts things
-rownames(annotations_mapped) <- annotations_mapped$exp_component_name
-#type_counts_Corr = table(annotations_mapped$supertype_Corr)
-#type_counts_Tree = table(annotations_mapped$supertype_Tree)
-type_counts_Corr = table(annotations_mapped$level3.subclass_Corr)
-type_counts_Tree = table(annotations_mapped$level3.subclass_Tree)
+    # Put annotations and counts in the same order
+    query.metadata <- query.metadata[match(colnames(query.data),query.metadata$exp_component_name),] 
+    rownames(query.metadata) <- query.metadata$exp_component_name  
 
-write.csv(annotations_mapped, file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_full.csv"), row.names=FALSE)
-save(annotations_mapped, type_counts_Corr, type_counts_Tree, file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_full.Rdata"))
+    ## Get marker genes from dendrogram
+    #addDendrogramMarkers()  # When running for first time
+    #load(AIT.anndata$uns$dend)
+    #dend = reference$dend
+    #dend <- readRDS(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]])
+    #dend <- json_to_dend(fromJSON(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]]))
+    dend <- readRDS(file.path(refFolder, mode, "dend.RData"))  # Or whatever mode is
 
-#dir.create(file.path(mappingFolder, "NHP_BG_RSC_204_350_map_full"))
+    #dend_file = paste0(refFolder,'/dend.RData')
+    #dend <- readRDS(dend_file)
+    allMarkers = unique(unlist(get_dend_markers(dend)))
 
-buildMappingDirectory(AIT.anndata    = AIT.anndata, 
-                      mappingFolder  = file.path(mappingFolder, "NHP_BG_RSC_204_350_map_full"),
-                      query.data     = counts,  # Don't need log-normalized data here
-                      query.metadata = query.metadata,
-                      query.mapping  = query.mapping,
-                      doPatchseqQC   = TRUE,  # Set to FALSE if not needed or if writePatchseqQCmarkers was not applied in reference generation
-)
+    ## Alternative get genes from MERFISH panel
+    #panel_df = read.csv(file.path(panelFolder, "AIT_115_MERFISH_panel.xlsx"))
 
-dir(file.path(mappingFolder, "NHP_BG_RSC_204_350_map_full"))
+    ## Subset query data to just those markers
+    query.data = query.data[intersect(rownames(query.data), allMarkers),]
 
-# leaf node names, each also has an ID, 0 appears to be unclassified, 
-# In this taxonomy there are 49 types - max(annotations$primary_type_id)
+    ## Identify the offtarget cell types manually.
+    print(unique(AIT.anndata$obs[class_colname]))
 
-# Don't need to run this if you are running buildMappingDirectory, but will do it to generate Rdata and csv version
-#writePatchseqQCmarkers(counts = query.counts,
-#                       metadata = query.metadata,
-#                       subsample = 100,  # Default of 100 is reasonable
-#                       subclass.column = "level3.subclass_Corr",  # default
-#                       class.column = "level1.class_Corr",  # default
-#                       #off.target.types = "Non-neuron",  # default is various iterations of non-neuronal
-#                       off.target.types = c("NN"),
-#                       num.markers = 50,     # Default of 50 is probably fine
-#                       shinyFolder = paste0(refFolder,"/")    # don't need to paste0 if your refFolder path has /
-#)
+    query.mapping <- taxonomy_mapping(AIT.anndata= AIT.anndata,
+                                    query.data = query.data, 
+                                    corr.map   = TRUE, # Flags for which mapping algorithms to run
+                                    tree.map   = TRUE, 
+                                    seurat.map = FALSE, 
+                                    label.cols = c(class_colname, neigh_colname, subclass_colname, cluster_colname)
+    )
+    a <- strsplit(refFolder,'/')[[1]]
+    taxname <- a[length(a)]
+    b <- strsplit(data_fn, '_')[[1]]
+    dataname <- b[2]
 
-# Don't need to run this if you are running buildMappingDirectory, but will do it to generate Rdata and csv version
-annoNew = applyPatchseqQC (AIT.anndata = AIT.anndata, ## A patchseq taxonomy object.
-                           query.data = query.counts, ## Counts are required here.
-                           #query.data = query.counts,
-                           query.metadata = annotations_mapped, ## Results of the previous mapping or AIT.anndata$obs, no mapping is required.
-                           #query.metadata = annotations_mapped,
-                           verbose=FALSE)
-# Ran the contents of the function directly in R to avoid error in /R/patchseq_output.R
-save(annoNew, file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_full_QC.Rdata"))
-write.csv(annoNew, file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_full_QC.csv"))
+    write.csv(query.mapping, file.path(mappingFolder, paste(taxname, dataname, 'mapping.csv', sep='_')), row.names=FALSE)
+    save(query.mapping, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping.Rdata', sep='_')))
 
+    # Variable renaming
+    #clusters  <- unique(query.mapping$cluster)   
+    clusters <- unique(AIT.anndata$uns$clusterInfo$cluster_label)
+    #subclass_levels <- unique(query.mapping$subclass_Corr)
+    #subclass_levels <- unique(AIT.anndata$uns$clusterInfo$subclass_label)
+
+    annotations_mapped <- merge(x = query.mapping, y = query.metadata, by.x = 0, by.y = 0, all=TRUE) 
+    #annotations_mapped <- merge(x = query.mapping, y = query.metadata, by.x = 0, by.y = "exp_component_name", all=TRUE) 
+    # Alt hack:
+    #rownames(query.mapping) = rownames(query.metadata)
+    #annotations_mapped <- merge(x = query.mapping, y = query.metad ata, by.x = 0, by.y = 0, all=TRUE) 
+    # annotations_mapped$clusters <- factor(annotations_mapped$cluster_Tree, levels=clusters)
+    # annotations_mapped$class   <- annotations_mapped$class_Tree
+    # annotations_mapped$class[!is.element(annotations_mapped$class,c("IN","MSN"))] = "Non-neuronal"
+    annotations_mapped <- annotations_mapped[match(rownames(query.metadata),annotations_mapped$exp_component_name),]   # merge resorts things
+    rownames(annotations_mapped) <- annotations_mapped$exp_component_name
+    #type_counts_Corr = table(annotations_mapped$supertype_Corr)
+    #type_counts_Tree = table(annotations_mapped$supertype_Tree)
+    type_counts_Corr = table(annotations_mapped$level3.subclass_Corr)
+    type_counts_Tree = table(annotations_mapped$level3.subclass_Tree)
+
+    write.csv(annotations_mapped, file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_full.csv"), row.names=FALSE)
+    save(annotations_mapped, type_counts_Corr, type_counts_Tree, file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_full.Rdata"))
+
+    buildMappingDirectory(AIT.anndata    = AIT.anndata, 
+                        mappingFolder  = file.path(mappingFolder, "NHP_BG_RSC_204_358_map_full"),
+                        query.data     = counts,  # Don't need log-normalized data here
+                        query.metadata = query.metadata,
+                        query.mapping  = query.mapping,
+                        doPatchseqQC   = TRUE,  # Set to FALSE if not needed or if writePatchseqQCmarkers was not applied in reference generation
+    )
+
+    dir(file.path(mappingFolder, "NHP_BG_RSC_204_358_map_full"))
+
+
+    # leaf node names, each also has an ID, 0 appears to be unclassified, 
+    # In this taxonomy there are 49 types - max(annotations$primary_type_id)
+
+    # Don't need to run this if you are running buildMappingDirectory, but will do it to generate Rdata and csv version
+    #writePatchseqQCmarkers(counts = query.counts,
+    #                       metadata = query.metadata,
+    #                       subsample = 100,  # Default of 100 is reasonable
+    #                       subclass.column = "level3.subclass_Corr",  # default
+    #                       class.column = "level1.class_Corr",  # default
+    #                       #off.target.types = "Non-neuron",  # default is various iterations of non-neuronal
+    #                       off.target.types = c("NN"),
+    #                       num.markers = 50,     # Default of 50 is probably fine
+    #                       shinyFolder = paste0(refFolder,"/")    # don't need to paste0 if your refFolder path has /
+    #)
+
+    # Don't need to run this if you are running buildMappingDirectory, but will do it to generate Rdata and csv version
+    annoNew = applyPatchseqQC (AIT.anndata = AIT.anndata, ## A patchseq taxonomy object.
+                            query.data = query.counts, ## Counts are required here.
+                            #query.data = query.counts,
+                            query.metadata = annotations_mapped, ## Results of the previous mapping or AIT.anndata$obs, no mapping is required.
+                            #query.metadata = annotations_mapped,
+                            verbose=FALSE)
+    # Ran the contents of the function directly in R to avoid error in /R/patchseq_output.R
+    save(annoNew, file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_full_QC.Rdata"))
+    write.csv(annoNew, file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_full_QC.csv"))
+}
 # annotations_mapped$cluster <- factor(annotations_mapped$clusters, levels=clusters)  # Make into discrete levels
 inds1 = grepl("STR",annotations_mapped$roi)
 #inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annoNew$roi), TRUE,FALSE)
@@ -180,25 +211,25 @@ inds6 = annoNew$marker_sum_norm_label >= 0.6
 # Ran the contents of the function directly in R to avoid error in /R/patchseq_output.R
 
 annoNew_roi = annoNew[inds1,]
-save(annoNew_roi, file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_roi_QC.Rdata"))
-write.csv(annoNew_roi, file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_roi_QC.csv"))
+save(annoNew_roi, file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_roi_QC.Rdata"))
+write.csv(annoNew_roi, file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_roi_QC.csv"))
 
 # To merge in mappings to full taxonomy (including glia)
 annoNew_roi_with_glia = annotations_mapped[inds1,]
-var<-load(file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_roi_QC.Rdata"))
+var<-load(file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_roi_QC.Rdata"))
 annoNew_roi_with_glia = annoNew_roi_with_glia[,2:11]
 colnames(annoNew_roi_with_glia) <- paste0(colnames(annoNew_roi_with_glia), '_wglia')
 annotations_mapped2 <- merge(x = annoNew_sub, y = annoNew_roi_with_glia, by.x = "exp_component_name", by.y = 0, all=TRUE) 
 annoNew_wglia <- annotations_mapped2[match(rownames(annoNew_roi_with_glia),annotations_mapped2$exp_component_name),]   # merge resorts things
-save(annoNew_wglia, file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_roi_QC.Rdata"))
-write.csv(annoNew_wglia, file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_roi_QC.csv"))
+save(annoNew_wglia, file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_roi_QC.Rdata"))
+write.csv(annoNew_wglia, file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_roi_QC.csv"))
 
 annoNew_sub = annoNew[inds1&inds3&inds4&inds6,]
-save(annoNew_sub, file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_sub_QC.Rdata"))
-write.csv(annoNew_sub, file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_sub_QC.csv"))
+save(annoNew_sub, file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_sub_QC.Rdata"))
+write.csv(annoNew_sub, file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_sub_QC.csv"))
 
 # Sampling counts
-load(file=file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_sub_QC.Rdata"))
+load(file=file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_sub_QC.Rdata"))
 
 dim(annoNew_sub)
 type_counts_Corr = table(annoNew_sub$level3.subclass_Corr)
@@ -305,11 +336,11 @@ ggplot(type_counts,aes(x= Var1, y = Freq, fill = source)) +
 dev.off()
 
 
-dir.create(file.path(mappingFolder, "NHP_BG_204_350_AIT115_map_sub_patchseqQC"))
-#unlink(file.path(mappingFolder, "NHP_BG_204_350_AIT115_map_sub_patchseqQC/dend.RData"))
+dir.create(file.path(mappingFolder, "NHP_BG_204_358_AIT115_map_sub_patchseqQC"))
+#unlink(file.path(mappingFolder, "NHP_BG_204_358_AIT115_map_sub_patchseqQC/dend.RData"))
 
 buildMappingDirectory(AIT.anndata    = AIT.anndata, 
-                      mappingFolder  = file.path(mappingFolder, "NHP_BG_204_350_AIT115_map_sub_patchseqQC"),
+                      mappingFolder  = file.path(mappingFolder, "NHP_BG_204_358_AIT115_map_sub_patchseqQC"),
                       query.data     = query.counts_sub,  # Don't need log-normalized data here
                       query.metadata = query.metadata_sub,
                       query.mapping  = query.mapping_sub,
@@ -320,7 +351,7 @@ unique(annotations_mapped$roi)
 
 anno_mapped_roi = annoNew[inds1,]
 query.data_roi = query.data[,inds1]
-write.csv(anno_mapped_roi, file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_roi.csv"), row.names=FALSE)
+write.csv(anno_mapped_roi, file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_roi.csv"), row.names=FALSE)
 type_counts_Corr_roi = table(anno_mapped_roi$level3.subclass_Corr)
 type_counts_Tree_roi = table(anno_mapped_roi$level3.subclass_Tree)
 
@@ -332,4 +363,4 @@ anno_mapped_sub <- annoNew[inds1&inds3&inds4&inds6,]
 
 type_counts_Corr_QC = table(anno_mapped_sub$level3.subclass_Corr)
 type_counts_Tree_QC = table(anno_mapped_sub$level3.subclass_Tree)
-write.csv(anno_mapped_sub, file.path(mappingFolder,"NHP_BG_204_350_AIT115_ann_map_sub_QC.csv"), row.names=FALSE)
+write.csv(anno_mapped_sub, file.path(mappingFolder,"NHP_BG_204_358_AIT115_ann_map_sub_QC.csv"), row.names=FALSE)
