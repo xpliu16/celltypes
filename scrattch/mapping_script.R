@@ -19,9 +19,14 @@ source("/home/xiaoping.liu/scrattch/mapping/run_mappings.R") # on cluster
 # CrossAreal taxonomies
 
 #region = "MTG"
-region = "V1"
 #roi_strs = "TCx|Tcx|TEa"
-roi_strs = "OCx|VISp"
+
+#region = "V1"
+#roi_strs = "OCx|VISp"
+
+region = "M1"
+roi_strs = "FCx|MOp"
+
 data_fn = "20240321_RSC-122-359_human_patchseq_star2.7"
   
 run_mappings(refFolder = paste0("/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/CrossAreal_",region),
@@ -222,16 +227,24 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
     
     annoNew_roi = annoNew[inds1,]
     save(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.Rdata', sep='_')))
-    write.csv(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.csv"', sep='_')))
+    write.csv(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.csv', sep='_')))
     
     annoNew_roi_proj = annoNew[inds0&inds1,]
-    write.csv(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_proj_QC.csv"', sep='_')))
+    save(annoNew_roi_proj, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_proj_QC.Rdata', sep='_')))
     
     annoNew_sub = annoNew[inds0&inds1&inds3&inds4&inds6,]
     save(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.Rdata', sep='_')))
-    write.csv(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.csv"', sep='_')))
+    write.csv(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.csv', sep='_')))
 }
 
+a <- strsplit(refFolder,'/')[[1]]
+taxname <- a[length(a)]
+b <- strsplit(data_fn, '_')[[1]]
+dataname <- b[2]
+vars<-load(file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.Rdata', sep='_')))
+vars<-load(file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.Rdata', sep='_')))
+vars<-load(file=file.path(mappingFolder, paste(taxname, dataname, 'roi_proj_QC.Rdata', sep='_')))
+vars<-load(file=file.path(mappingFolder,paste(taxname, dataname, 'ann_map_full_QC.Rdata', sep='_')))
 
 # To merge in mappings to full taxonomy (including glia)
 annoNew_roi_with_glia = annotations_mapped[inds1,]
@@ -252,9 +265,11 @@ dim(annoNew_sub)
 type_counts_Corr = table(annoNew_sub[paste0(str_replace(subclass_colname,'_label',''),'_Corr')])
 type_counts_Tree = table(annoNew_sub[paste0(str_replace(subclass_colname,'_label',''),'_Tree')])
 
+type_counts_Tree = table(annoNew_sub[paste0(str_replace(cluster_colname,'_label',''),'_Tree')])
+
 # Plot NMS histogram for ROI
 png(file.path(mappingFolder, paste(taxname, dataname, 'roi_NMS_hist.png', sep='_')), width = 500, height = 350)
-hist(annoNew_roi$marker_sum_norm_label)
+hist(annoNew_roi_proj$marker_sum_norm_label)
 dev.off()
 
 

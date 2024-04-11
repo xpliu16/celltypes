@@ -172,12 +172,12 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   
   annoNew_roi = annoNew[inds1,]
   save(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.Rdata', sep='_')))
-  write.csv(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.csv"', sep='_')))
+  write.csv(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.csv', sep='_')))
   
   annoNew_roi_proj = annoNew[inds0&inds1,]
-  write.csv(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_proj_QC.csv', sep='_')))
+  save(annoNew_roi_proj, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_proj_QC.Rdata', sep='_')))
   
   annoNew_sub = annoNew[inds0&inds1&inds3&inds4&inds6,]
   save(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.Rdata', sep='_')))
-  write.csv(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.csv"', sep='_')))
+  write.csv(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.csv', sep='_')))
 }
