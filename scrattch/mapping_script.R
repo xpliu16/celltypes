@@ -24,8 +24,11 @@ source("/home/xiaoping.liu/scrattch/mapping/run_mappings.R") # on cluster
 #region = "V1"
 #roi_strs = "OCx|VISp"
 
-region = "M1"
-roi_strs = "FCx|MOp"
+#region = "M1"
+#roi_strs = "FCx|MOp"
+
+region = "DLPFC"
+roi_strs = "FCx|dlPFC"
 
 data_fn = "20240321_RSC-122-359_human_patchseq_star2.7"
   
