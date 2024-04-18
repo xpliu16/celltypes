@@ -184,7 +184,7 @@ yl <- range(brain.combined@reductions$umap@cell.embeddings[,2])
 mappingFolder<- file.path(mappingFolder,"Int_UMAP_vs115NCBI")
 #dir.create(mappingFolder, showWarnings=FALSE)
 
-jpeg(file.path(mappingFolder,'204_359_integrated_umap_dendGn_roi.jpg'), width = 2000, height = 1200, quality = 100)
+jpeg(file.path(mappingFolder,'204_359_integrated_umap_dendGn_sub.jpg'), width = 2000, height = 1200, quality = 100)
 
 DimPlot(brain.combined, reduction = "umap", split.by = "set",pt.size = 1)
 umap = as.matrix(brain.combined@reductions[["umap"]]@cell.embeddings)
@@ -200,18 +200,18 @@ dev.off()
 # For all subclasses
 #jpeg(file.path(mappingFolder,'204_337_integrated_umap2_dendGn.jpg'), width = 2500, height = 1600, quality = 100)
 # For STR subclasses only
-jpeg(file.path(mappingFolder,'204_359_integrated_umap2_dendGn_roi.jpg'), width = 2000, height = 1600, quality = 100)
+jpeg(file.path(mappingFolder,'204_359_integrated_umap2_dendGn_sub.jpg'), width = 2000, height = 1600, quality = 100)
 
-p1 <- DimPlot(brain.combined, reduction = "umap", group.by = "set", shape.by = "set", label.size = 1, pt.size = .5, cols = c("red", "grey"))+xlim(xl) + ylim(yl)
-p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5)+ggtitle("FACS")+xlim(xl) + ylim(yl) +guides(color = guide_legend(override.aes = list(size=4), ncol=1))
+p1 <- DimPlot(brain.combined, reduction = "umap", group.by = "set", label.size = 1, pt.size = 1, cols = c("red", "grey"), raster = F)+xlim(xl) + ylim(yl)
+p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5, raster=F)+ggtitle("FACS")+xlim(xl) + ylim(yl) +guides(color = guide_legend(override.aes = list(size=4), ncol=1))
 p3 <- DimPlot(brain.combined, group.by = "subclass",  reduction = "umap",
-              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS))+ ggtitle("Patch-seq (Tree)")+xlim(xl) + ylim(yl)
+              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Patch-seq (Tree)")+xlim(xl) + ylim(yl)
 p4 <- DimPlot(brain.combined, group.by = "area",  reduction = "umap",
-              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS))+ ggtitle("ROI Area")+xlim(xl) + ylim(yl)
+              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("ROI Area")+xlim(xl) + ylim(yl)
 p5 <- DimPlot(brain.combined, group.by = "subclass_corr",  reduction = "umap",
-              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS))+ ggtitle("Patch-seq (Corr)")+xlim(xl) + ylim(yl)
+              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Patch-seq (Corr)")+xlim(xl) + ylim(yl)
 p6 <- DimPlot(brain.combined, group.by = "prep",  reduction = "umap",
-              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS))+ ggtitle("Prep")+xlim(xl) + ylim(yl)
+              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Prep")+xlim(xl) + ylim(yl)
 plot_grid(p1, p2, p3,p4,p5,p6, ncol=2)
 
 dev.off()
@@ -220,7 +220,7 @@ dev.off()
 #unique(brain.combined$subclass[brain.combined$set=="PatchSeq"])
 #cols = c('V0' = 'red', 'V6' = 'grey', 'V8' = 'grey')
 
-jpeg(file.path(mappingFolder,'204_359_integrated_umap3_dendGn_roi.jpg'), width = 2400, height = 1200,
+jpeg(file.path(mappingFolder,'204_359_integrated_umap3_dendGn_sub.jpg'), width = 2400, height = 1200,
      pointsize = 12, quality = 100)
 plot_grid(p1,p2)
 p1+p2    # WHAT DOES THIS DO?
@@ -229,9 +229,9 @@ dev.off()
 install.packages("pals")
 library(pals)
 colz <- DiscretePalette(n = length(unique(annoBG_all$level3.subclass_label)), palette = "polychrome")
-jpeg(file.path(mappingFolder,'204_359_integrated_umap4_dendGn_lab_repel_roi.jpg'), width = 2400, height = 1200,
+jpeg(file.path(mappingFolder,'204_359_integrated_umap4_dendGn_lab_repel_sub.jpg'), width = 2600, height = 1200,
      pointsize = 12, quality = 100)
-p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5, cols=colz, label=T, repel=T)+ggtitle("FACS")+xlim(xl) + ylim(yl)
+p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5, cols=colz, label=T, repel=T, raster=F)+ggtitle("FACS")+xlim(xl) + ylim(yl)
 #LabelClusters(plot = p2, id = 'subclass')
 plot_grid(p1,p2)
 p1+p2    # WHAT DOES THIS DO?
@@ -242,9 +242,10 @@ dev.off()
 #colz <- DiscretePalette(n = length(unique(annoBG_all$level3.subclass_label)), palette = "polychrome")
 sc_names = sort(unique(brain.combined@meta.data$subclass))
 colz <- brain.combined@meta.data$subclass_color_corr[match(sc_names, brain.combined@meta.data$subclass)]  
-jpeg(file.path(mappingFolder,'204_359_integrated_umap4_dendGn_nolab2_roi.jpg'), width = 3500, height = 1500,
+#jpeg(file.path(mappingFolder,'204_359_integrated_umap4_dendGn_nolab2_sub.jpg'), width = 3500, height = 1500,
      pointsize = 12, quality = 100)
-p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = 0.5, cols=colz)+
+png(file.path(mappingFolder,'204_359_integrated_umap4_dendGn_nolab2_sub.png'), width = 3500, height = 1500, pointsize = 12)
+p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = 0.5, cols=colz, raster=F)+
   xlim(xl) + ylim(yl) +  guides(color = guide_legend(override.aes = list(size=4), ncol=1) ) 
 #LabelClusters(plot = p2, id = 'subclass')
 p1<- p1 + theme(axis.text.x=element_text(size=45), axis.text.y=element_text(size=45), axis.title=element_text(size=45, face="bold", margin=0.1), legend.text = element_text(size=20))
@@ -254,7 +255,7 @@ p1+p2    # WHAT DOES THIS DO?
 dev.off()
 
 #umap_tx = data.frame(umap1 = umap1, umap2 = umap2, colz = colz)
-#jpeg(file.path(mappingFolder,'204_337_integrated_umap4_dendGn_nolab_roi_ggplot.jpg'), width = 2400, height = 1200,
+#jpeg(file.path(mappingFolder,'204_337_integrated_umap4_dendGn_nolab_sub_ggplot.jpg'), width = 2400, height = 1200,
 #     pointsize = 12, quality = 100)
 #ggplot(umap_tx, aes(x=umap1, y=umap2, color=colz)) + geom_point() 
 #dev.off()
@@ -265,15 +266,15 @@ brain.metadata <- cbind(brain.metadata, umap1, umap2)
 
 main="UMAP Visualization of Tree mapped NHP_BG Patch-seq cells"
 pad=0.1 # was 0.1
-cex=0.4
+cex=0.6  # 0.4
 pch=19
 cex.main=1
 cex.legend=0.7
 
-inds_ps = brain.metadata$set == "PatchSeq"
-inds_tx = brain.metadata$set == "FACs"
+inds_ps = brain.metadata$set == "Patch-seq"
+inds_tx = brain.metadata$set == "Taxonomy"
 
-jpeg(file.path(mappingFolder,'204_359_integrated_umap_Corr_Tree_dendGn_roi.jpg'), width = 1500, height = 600,
+jpeg(file.path(mappingFolder,'204_359_integrated_umap_Corr_Tree_dendGn_sub.jpg'), width = 1500, height = 600,
      pointsize = 12, quality = 100)
 par(mfrow=c(1,3))
 plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
@@ -302,7 +303,7 @@ mtext(side=3, "Patchseq Cells (Corr)", cex=cex.main)
 
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_359_integrated_umap_QC_dendGn_roi.jpg'), width = 2400, height = 1600, quality = 100)
+jpeg(file.path(mappingFolder,'204_359_integrated_umap_QC_dendGn_sub.jpg'), width = 2400, height = 1600, quality = 100)
 p7 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC") + ggtitle("NMS > 0.4")
 #p8 <- DimPlot(brain.combined, reduction = "umap", cells=colnames(dataBG_all_PS), group.by = "QC2") + ggtitle("NMS stringent")
 p8 <- DimPlot(brain.combined, reduction = "umap",pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC5") + ggtitle("score.Corr > 0.55")
@@ -311,7 +312,7 @@ p9 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(da
 plot_grid(p1, p2, p6, p7, p8, p9, nrow=2)
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_359_integrated_umap_QC2_dendGn_roi.jpg'), width = 2400, height = 1600, quality = 100)
+jpeg(file.path(mappingFolder,'204_359_integrated_umap_QC2_dendGn_sub.jpg'), width = 2400, height = 1600, quality = 100)
 p10 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC3") + ggtitle("Library_prep_pass_fail")
 p11 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC6") + ggtitle("Genes detected < 8000")
 p12 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC2") + ggtitle("NMS_stringent")
