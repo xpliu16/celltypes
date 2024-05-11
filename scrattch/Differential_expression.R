@@ -161,7 +161,8 @@ annoAll <- data.frame()
 
 #subset = list('CrossArea_subclass_label', c('L2/3 IT'))
 #subset = list('CrossArea_subclass_label', c('L4 IT'))
-subset = list('CrossArea_subclass_label', c('L2/3 IT', 'L4 IT'))
+#subset = list('CrossArea_subclass_label', c('L2/3 IT', 'L4 IT'))
+subset = list('CrossArea_subclass_label', c('Sst'))
 # subclass = L2/3 IT includes L4, L5, and L6 IT clusters
 genes = list()
 for (ann in names(anndataList)) {
@@ -190,7 +191,8 @@ comparisons = list(list(#type1 = 'CrossAreal_V1',
                         type1 = names(anndataList)[1],
                         type2 = names(anndataList)[2],
                         colname = 'ann_source', 
-                        title = 'L23IT:MTG_vs_M1',
+                        #title = 'L23IT:MTG_vs_M1',
+                        title = 'Sst'
                         splitby = 'CrossArea_subclass_label')) 
 
 comparisons = list(list(type1 = 'L2/3 IT_1', 
@@ -296,6 +298,27 @@ for (comp in comparisons){
 }
 # NOTE png's can be slow to save
 allMarkers <- unique(allMarkers)
+#figpath = "/home/xiaoping.liu/Desktop/wDLPFC_M1_L23IT6ref"
+#figpath = "/home/xiaoping.liu/Desktop/wDLPFC_MTG_L23IT6ref_nointeraction"
+figpath = "/home/xiaoping.liu/Desktop/wDLPFC_SST"
+dir.create(figpath)
+
+# Cell composition bar plots
+df_tallies = data.frame()
+for (ann in names(anndataList)) {
+  AIT.anndata = anndataList[[ann]]
+  tallies <- AIT.anndata$obs[AIT.anndata$obs$CrossArea_subclass_label %in% c ('L2/3 IT', 'L4 IT'),] %>% group_by (CrossArea_cluster_label) %>% tally()
+  tallies$n <- tallies$n / sum(tallies$n)
+  area = gsub("CrossAreal_","",ann)
+  df_temp <- data.frame(x = area, y = tallies$n, Cluster = as.character(tallies$CrossArea_cluster_label))
+  df_tallies <- rbind(df_tallies, df_temp)
+}
+df_tallies <- df_tallies[order(df_tallies$Cluster), ]
+png(file.path(figpath, "L23L4IT_composition.png"), width=10, height=5.9, units='in', res=600)
+ggplot(df_tallies, aes(x = x, y = y, fill = Cluster)) + 
+  geom_bar(stat="identity") + ylab("Fraction") + xlab('') + 
+  theme_gray(base_size = 24) + scale_fill_brewer(palette='Set3')
+dev.off()
 
 library(lme4)
 library (lmerTest) 
@@ -349,8 +372,9 @@ model_data = cbind(Expr.dat.log,
 colnames(model_data) = c(colnames(Expr.dat.log), 'region', 'cluster', 'donor')
 
 # Set reference classes
-model_data$region <- relevel(factor(model_data$region), ref = "CrossAreal_M1")
+model_data$region <- relevel(factor(model_data$region), ref = "CrossAreal_MTG")
 model_data$cluster <- relevel(model_data$cluster, ref = "L2/3 IT_6")
+model_data$cluster <- relevel(model_data$cluster, ref = "Sst_1")
 
 # Subsampling cells
 reg_counts <- model_data %>% group_by(region) %>% tally()
@@ -399,8 +423,6 @@ for (reg in unique(reg_counts$region)){
   }
 }
 
-
-# But you have no random effects
 #gm1 <- glmer(kcnq5 ~ region + cluster, family = poisson, data = model_data,
 #             subset = annoAll['CrossArea_subclass_label'] == subclass)
 # data: an optional data frame containing the variables named in formula
@@ -447,7 +469,7 @@ for (gene in colnames(Expr.dat.log)){
   gene <- as.symbol(gene)
   #mod<-eval(bquote(glm(.(gene) ~ region*cluster, family = poisson, data = model_data)))
   #mod<-eval(bquote(glmer(.(gene) ~ region*cluster + (1|donor), family = poisson, data = model_data, nAGQ = 0))) # These pvalues are Wald tests of the model with and without each individual parameter (but not that whole categorical variable)
-  mod<-eval(bquote(lmer(.(gene) ~ region*cluster + (1|donor), data = model_data)))
+  mod<-eval(bquote(lmer(.(gene) ~ region + cluster + (1|donor), data = model_data)))
   #mod<-eval(bquote(lme(.(gene) ~ region*cluster, random=~1|donor, data = model_data)))  # this can't handle rank deficiency from not all combinations of crossed variable having samples
   summary(mod)  
   #mod$coefficients
@@ -457,14 +479,15 @@ for (gene in colnames(Expr.dat.log)){
   pvals <- c(pvals, list(pval_i))  # pvals
   
   regional <- c(regional, 
-                any((abs(coef(summary(mod))[c('regionCrossAreal_MTG',
+                any((abs(coef(summary(mod))[c('regionCrossAreal_M1',
                                              'regionCrossAreal_V1', 
                                              'regionCrossAreal_DLPFC'),1]) > coeff_thresh)
-                    & (p.adjust(pval_i[c('regionCrossAreal_MTG',
+                    & (p.adjust(pval_i[c('regionCrossAreal_M1',
                                            'regionCrossAreal_V1',
                                          'regionCrossAreal_DLPFC')], 
                                 method = "bonferroni") < psig)))
-  
+  #terms = rownames(summary(mod)$coefficients)
+  #terms_sub = c(terms[grepl("^cluster", terms)])
   cluster <- c(cluster, 
                 any((abs(coef(summary(mod))[c('clusterL2/3 IT_5', 
                                              'clusterL2/3 IT_1',
@@ -506,6 +529,64 @@ for (gene in colnames(Expr.dat.log)){
                                              'clusterL4 IT_6')],
                                  method = "bonferroni") < psig)))
   
+  
+  #terms_sub = c(terms[grepl("regionCrossAreal_M1:cluster", terms)],
+  #              terms[grepl("regionCrossAreal_V1:cluster", terms)],
+  #              terms[grepl("regionCrossAreal_DLPFC:cluster", terms)])
+  #regxclust <- c(regxclust,
+  #               any((abs(coef(summary(mod))[c(terms_sub),1]) > coeff_thresh)
+  #                   & (p.adjust(pval_i[c(terms_sub)], method = "bonferroni") < psig)))
+  
+  #for glm():
+  ##anova(mod) # These are sequentially added 
+  #chisq_i<- anova(mod,test='Chisq')['Pr(>Chi)']
+  #chisq<- c(chisq, list(chisq_i))
+  #chisq_regional<- c(chisq_regional, p.adjust(chisq_i['region', 'Pr(>Chi)'], method = "bonferroni") < psig)
+  #chisq_cluster<- c(chisq_cluster, p.adjust(chisq_i['cluster', 'Pr(>Chi)'], method = "bonferroni") < psig)
+  
+  Pr_i <- anova(mod)['Pr(>F)']
+  Pr_F <- c(Pr_F, list(Pr_i))
+  Pr_regional <- c(Pr_regional, p.adjust(Pr_i['region', 'Pr(>F)'], method = "bonferroni") < psig)
+  Pr_cluster <- c(Pr_cluster, p.adjust(Pr_i['cluster', 'Pr(>F)'], method = "bonferroni") < psig)
+  donor_ef <- c(donor_ef, ranef(mod))
+}  
+
+#for (gene in c('KCNQ5','DPP10')){
+for (gene in colnames(Expr.dat.log)){
+  gene <- as.symbol(gene)
+  #mod<-eval(bquote(glm(.(gene) ~ region*cluster, family = poisson, data = model_data)))
+  #mod<-eval(bquote(glmer(.(gene) ~ region*cluster + (1|donor), family = poisson, data = model_data, nAGQ = 0))) # These pvalues are Wald tests of the model with and without each individual parameter (but not that whole categorical variable)
+  mod<-eval(bquote(lmer(.(gene) ~ region*cluster + (1|donor), data = model_data)))
+  #mod<-eval(bquote(lme(.(gene) ~ region*cluster, random=~1|donor, data = model_data)))  # this can't handle rank deficiency from not all combinations of crossed variable having samples
+  summary(mod)  
+  #mod$coefficients
+  #mod$residuals
+  coeffs <- c(coeffs, list(coef(summary(mod))[,1]))  # coefficient estimates
+  pval_i<-coef(summary(mod))[,5]  # column 4 for glm(), column 5 for lmer()
+  pvals <- c(pvals, list(pval_i))  # pvals
+  
+  regional <- c(regional, 
+                any((abs(coef(summary(mod))[c('regionCrossAreal_MTG',
+                                              'regionCrossAreal_V1', 
+                                              'regionCrossAreal_DLPFC'),1]) > coeff_thresh)
+                    & (p.adjust(pval_i[c('regionCrossAreal_MTG',
+                                         'regionCrossAreal_V1',
+                                         'regionCrossAreal_DLPFC')], 
+                                method = "bonferroni") < psig)))
+  v1_spec = c(3, 6, 14, 20, 34, 15)
+  terms1 = paste0('clusterSst_', setdiff(2:37,v1_spec))
+  terms2 = paste0('clusterSst_', v1_spec)
+  terms = c(terms1, terms2)
+
+  cluster <- c(cluster, 
+               any((abs(coef(summary(mod))[c(terms),1]) > coeff_thresh)
+                   & (p.adjust(pval_i[c(terms)],
+                               method = "bonferroni") < psig)))
+  reg_clust <- c(reg_clust, 
+                 any((abs(coef(summary(mod))[c(terms),1]) > coeff_thresh)
+                     & (p.adjust(pval_i[c(terms)],
+                                 method = "bonferroni") < psig)))
+  
   terms = rownames(summary(mod)$coefficients)
   terms_sub = c(terms[grepl("regionCrossAreal_MTG:cluster", terms)],
                 terms[grepl("regionCrossAreal_V1:cluster", terms)],
@@ -532,14 +613,11 @@ mod_df <- data.frame(row.names = colnames(Expr.dat.log),
                      regional = unlist(regional), 
                      cluster = unlist(cluster), 
                      reg_cluster = unlist(reg_clust), 
-                     regxclust = unlist(regxclust),
+                     #regxclust = unlist(regxclust),
                      Pr_regional = unlist(Pr_regional),
                      Pr_cluster = unlist(Pr_cluster))
                      #chisq_regional = unlist(chisq_regional),
                      #chisq_cluster = unlist(chisq_cluster))
-
-figpath = "/home/xiaoping.liu/Desktop/wDLPFC_M1_L23IT6ref"
-dir.create(figpath)
 
 donor = do.call(cbind, donor_ef)
 donor_df = data.frame(t(donor))
@@ -629,17 +707,37 @@ temp <-temp[ , -which(colnames(temp) == "(Intercept)")]
 #temp <- temp[, col_order]
 
 mod_df2 <- data.frame(temp, row.names = colnames(Expr.dat.log))
-mod_df2$max_region_coeff = pmax(abs(mod_df2$regionCrossAreal_MTG), 
+mod_df2$max_region_coeff = pmax(abs(mod_df2$regionCrossAreal_M1), 
                                 abs(mod_df2$regionCrossAreal_V1), 
                                 abs(mod_df2$regionCrossAreal_DLPFC), na.rm = TRUE) 
 mod_df2 <- mod_df2[order(-mod_df2$max_region_coeff),]
 
+v1_spec = c(3, 6, 14, 20, 34, 15) # SST
+terms1 = paste0('clusterSst_', setdiff(2:37,v1_spec))
+terms2 = paste0('clusterSst_', v1_spec)
+terms = c(terms1, terms2)
+#terms = c('clusterL2/3 IT_2',    # Actually, don't reorder for L2/3 IT
+#          'clusterL2/3 IT_3',
+#          'clusterL2/3 IT_4',
+#          'clusterL4 IT_2',
+#          'clusterL4 IT_3', 
+#          'clusterL4 IT_4',
+#          'clusterL4 IT_6',
+#          'clusterL2/3 IT_1', 
+#          'clusterL2/3 IT_5',
+#          'clusterL4 IT_1',
+#          'clusterL4 IT_5',
+#          'clusterL2/3 IT_3', 
+#          'clusterL2/3 IT_4')
+mod_df2 = mod_df2[,c(colnames(mod_df2[1:3]),terms, colnames(mod_df2[(4+length(terms)):dim(mod_df2)[2]]))]
+
 # Calculate bias to make 0 equal to white on divergent color scale
 b <- log(min(mod_df2[1:30,], na.rm=T)/(min(mod_df2[1:30,], na.rm=T)-max(mod_df2[1:30,], na.rm=T)), base = 0.5)
-divergent_palette <- colorRampPalette(c("blue", "white", "red"), bias=b)
-png(file.path(figpath, "Top_30_regional.png"), width=5, height=4, units='in', res=150)
+divergent_palette <- colorRampPalette(c("#1b61e4", "white", "coral"), bias=b)
+png(file.path(figpath, "Top_30_regional.png"), width=4.5, height=4.25, units='in', res=150) # was width 5 
 pheatmap(mod_df2[1:30,1:(dim(mod_df2)[2]-1)], cluster_rows = FALSE, 
-         cluster_cols=FALSE, color = divergent_palette(n=100), fontsize=6)
+         cluster_cols=FALSE, color = divergent_palette(n=100), fontsize=8,
+         angle_col=315)
 #grid.newpage()
 #grid.draw(h)
 dev.off()
@@ -654,9 +752,18 @@ mod_df2$max_regclust_coeff = pmax(abs(mod_df2$clusterL2.3.IT_2),
                                 abs(mod_df2$clusterL4.IT_6),na.rm = TRUE) 
 mod_df2 <- mod_df2[order(-mod_df2$max_regclust_coeff),]
 
+mod_df2$max_regclust_coeff = pmax(abs(mod_df2$clusterSst_3), 
+                                  abs(mod_df2$clusterSst_6), 
+                                  abs(mod_df2$clusterSst_14),
+                                  abs(mod_df2$clusterSst_15),
+                                  abs(mod_df2$clusterSst_20),
+                                  abs(mod_df2$clusterSst_34),na.rm = TRUE) 
+mod_df2 <- mod_df2[order(-mod_df2$max_regclust_coeff),]
+
+
 b <- log(min(mod_df2[1:30,], na.rm=T)/(min(mod_df2[1:30,], na.rm=T)-max(mod_df2[1:30,], na.rm=T)), base = 0.5)
 divergent_palette <- colorRampPalette(c("blue", "white", "red"), bias=b)
-png(file.path(figpath, "Top_30_regclust.png"), width=5, height=4, units='in', res=150)
+png(file.path(figpath, "Top_30_regclust.png"), width=9, height=4, units='in', res=150)
 pheatmap(mod_df2[1:30,1:(dim(mod_df2)[2]-2)], cluster_rows = FALSE, 
          cluster_cols=FALSE, color = divergent_palette(n=100), fontsize=6)
 dev.off()
@@ -723,7 +830,7 @@ mapping.umap <- umap(Expr.dat.log)    # Only passed ion channel genes
 #all(rownames(Expr.dat.df) == rownames(Expr.dat.log))  # TRUE
 layout <- mapping.umap$layout
 #save(layout, file="/home/xiaoping.liu/Desktop/L23IT_L4IT_UMAP_allgenes.Rdata")
-save(layout, file=file.path(figpath,"L23IT_L4IT_UMAP_gene_subset.Rdata"))
+save(mapping.umap, file=file.path(figpath,"L23IT_L4IT_UMAP_gene_subset.Rdata"))
 # Shuffle rows so some categories don't end up all on top in scatterplot
 randorder = sample(dim(layout)[1], dim(layout)[1], replace = FALSE)
 layout <- layout[randorder,]
@@ -732,8 +839,10 @@ Expr.dat.shuff_logCPM <- log2(Expr.dat.cpm+1)[randorder,]
 colnames(Expr.dat.shuff_logCPM) <- paste0(colnames(Expr.dat.shuff_logCPM),'_logCPM')
 Expr.dat.shuff <- Expr.dat.df[randorder,]    # raw counts
 
-umap_gene_list = c('KCNMB2', 'CNGB1', 'KCNH8', 'SCN3B', 'KCNN3', 'KCNIP1', 
-                   'KCNB2', 'KCNH7', 'ANO3', 'KCNH5','CACNG3')
+#umap_gene_list = c('KCNIP4', 'KCND3', 'KCND2', 'DPP10', 'KCNMB2', 'KCNQ5', 
+#                   'CACNG4', 'SCN3B', 'KCNH7')
+umap_gene_list = c('KCNH8', 'KCNIP1', 'KCNMB2', 'SCN3B', 'CACNG3', 
+                   'ANO3', 'CNGB1', 'KCNH7')
 umap_gene_list_log <- paste(umap_gene_list, "logCPM", sep='_')
 umap_df <- data.frame(layout,
                       cluster = annoAll_shuff$CrossArea_cluster_label, 
@@ -742,41 +851,60 @@ umap_df <- data.frame(layout,
                       Expr.dat.shuff[,umap_gene_list], 
                       Expr.dat.shuff_logCPM[,umap_gene_list_log])
 
-umap_df$cluster <- factor(umap_df$cluster, levels=c("L2/3 IT_1", "L2/3 IT_2",   
-                                                    "L2/3 IT_3", "L2/3 IT_4",
-                                                    "L2/3 IT_5", "L2/3 IT_6",  
-                                                    "L4 IT_1", "L4 IT_2",
-                                                    "L4 IT_3", "L4 IT_4",
-                                                    "L4 IT_5", "L4 IT_6"))
+#umap_df$cluster <- factor(umap_df$cluster, levels=c("L2/3 IT_1", "L2/3 IT_2",   
+#                                                    "L2/3 IT_3", "L2/3 IT_4",
+#                                                    "L2/3 IT_5", "L2/3 IT_6",  
+#                                                    "L4 IT_1", "L4 IT_2",
+#                                                    "L4 IT_3", "L4 IT_4",
+#                                                    "L4 IT_5", "L4 IT_6"))
 
 png(file.path(figpath,"L23IT_L4IT_UMAP_cluster.png"), width=4.8, height=4, units='in', res=150)
-p1<-ggplot(umap_df, aes(x=X1, y=X2, color=cluster)) + geom_point(size=0.5) + scale_color_brewer(palette="Set3")
+theme_set(theme_grey(base_size = 18)) 
+#png(file.path(figpath,"SST_UMAP_cluster2.png"), width=5.4, height=4, units='in', res=150)
+p1<-ggplot(umap_df, aes(x=X1, y=X2, color=cluster)) + geom_point(size=0.5) + scale_color_brewer(palette="Set3")    
+# TECHNICALLY NOT ENOUGH COLORS FOR SST
 
-p1 + ggtitle("L2/3 IT and L4 IT cells\n(M1, DLPFC, MTG, and V1) Ion channel genes") +
+#p1 + ggtitle("L2/3 IT and L4 IT cells\n(M1, DLPFC, MTG, and V1) Ion channel genes") +
+p1 + ggtitle("SST cells\n(M1, DLPFC, MTG, and V1) Ion channel genes") +
   xlab("UMAP1") + ylab("UMAP2") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
               panel.background = element_rect(fill = "#F2F2F2"), 
-              axis.line = element_line(color = "black"))
+              axis.line = element_line(color = "black", linewidth = 0.7),
+              axis.text.x=element_blank(), 
+              axis.ticks.x=element_blank(), 
+              axis.text.y=element_blank(), 
+              axis.ticks.y=element_blank())
 dev.off()
 
-png(file.path(figpath,"L23IT_L4IT_UMAP_subclass.png"), width=4.8, height=4, units='in', res=150)
+
+#png(file.path(figpath,"SST_UMAP_subclass.png"), width=5.4, height=4, units='in', res=150)
+png(file.path(figpath,"L23IT_L4IT_UMAP_subclass.png"), width=4.5, height=4, units='in', res=150)
 p1<-ggplot(umap_df, aes(x=X1, y=X2, color=subclass)) + geom_point(size=0.5) + scale_color_brewer(palette="Set3")
 
 p1 + ggtitle("L2/3 IT and L4 IT cells\n(M1, DLPFC, MTG, and V1) Ion channel genes") +
   xlab("UMAP1") + ylab("UMAP2") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_rect(fill = "#F2F2F2"), 
-        axis.line = element_line(color = "black"))
+        axis.line = element_line(color = "black", linewidth = 0.7),
+        axis.text.x=element_blank(), 
+        axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), 
+        axis.ticks.y=element_blank())
 dev.off()
 
-png(file.path(figpath,"L23IT_L4IT_UMAP_region.png"), width=4.8, height=4, units='in', res=150)
+#png(file.path(figpath,"SST_UMAP_region.png"), width=5.4, height=4, units='in', res=150)
+png(file.path(figpath,"L23IT_L4IT_UMAP_region.png"), width=5.7, height=4, units='in', res=150)
 p1<-ggplot(umap_df, aes(x=X1, y=X2, color=region)) + geom_point(size=0.5) + scale_color_brewer(palette="Set3")
 
 p1 + ggtitle("L2/3 IT and L4 IT cells\n(M1, DLPFC, MTG, and V1) Ion channel genes") +
-  xlab("UMAP1") + ylab("UMAP2") +
+  xlab("UMAP1") + ylab("UMAP2") + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_rect(fill = "#F2F2F2"), 
-        axis.line = element_line(color = "black"))
+        axis.line = element_line(color = "black", linewidth = 0.7),
+        axis.text.x=element_blank(), 
+        axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), 
+        axis.ticks.y=element_blank())
 dev.off()
 
 png(file.path(figpath,"L23IT_L4IT_UMAP_KCNMB2.png"), width=4.8, height=4, units='in', res=150)
@@ -796,7 +924,7 @@ plot_grid(p1, p2, ncol = 2, nrow = 1)
 plot_umap_expr <- function(umap_df, gene, path = '/home/xiaoping.liu/Desktop') {
   fn = sprintf("L23IT_L4IT_UMAP_%s.png", gene)
   print(file.path(path, fn))
-  png(file.path(path, fn), width=4.8, height=4, units='in', res=150)
+  png(file.path(path, fn), width=3.5, height=4, units='in', res=150)
   gene <- as.symbol(gene)
   p1<-eval(bquote(ggplot(umap_df, aes(x=X1, y=X2, color=.(gene))) + geom_point(size=0.5)))
   
@@ -804,7 +932,15 @@ plot_umap_expr <- function(umap_df, gene, path = '/home/xiaoping.liu/Desktop') {
     xlab("UMAP1") + ylab("UMAP2") +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_rect(fill = "#F2F2F2"), 
-          axis.line = element_line(color = "black")))
+          axis.line = element_line(color = "black", linewidth = 0.7),
+          axis.text.x=element_blank(), 
+          axis.ticks.x=element_blank(), 
+          axis.text.y=element_blank(), 
+          axis.ticks.y=element_blank(),
+          legend.position = c(0.82, 0.77),
+          legend.text = element_text(size = 14),
+          legend.title=element_blank(),
+          legend.key.size = unit(0.17, "in")))
   
   dev.off()
 }
@@ -821,6 +957,101 @@ p <- ggplot(umap_df, aes(x=region, y=KCNMB2)) + geom_violin(bw = 0.3, color = 'd
 #  theme(axis.title.y = element_text(angle=0), axis.title.x = element_text(), axis.text.y = element_text(angle = 0, size = 36)) +
 #  scale_y_discrete(position = "right") + coord_flip()
 p + stat_summary(fun.y=median, geom="point", size=2, color="red")
+dev.off()
+
+
+df_PCA = read.csv("/home/xiaoping.liu/Desktop/SST_PCA.csv")  
+vars <- load("/home/xiaoping.liu/Desktop/wDLPFC_SST/L23IT_L4IT_UMAP_gene_subset.Rdata")    # Misnamed, actually SST
+# Load Expr_patchseq
+data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Human/patchseq/R_Object/"
+data_fn = "20240321_RSC-122-359_human_patchseq_star2.7"
+vars2 <- load(paste0(data_dir, paste0(data_fn, "_cpm.Rdata")))
+# Genes are rows, samples are columns
+#query.data <- logCPM(cpmR)
+query.data <- log2(cpmR +1)
+query.data <- query.data[colnames(Expr.dat.log),]
+query.data <- t(query.data)
+patchseq.umap <- predict(mapping.umap, query.data)
+foo <- merge(x = df_PCA, y = patchseq.umap, by.x = 'exp_component_name', by.y = 0) 
+
+library("viridis")
+#png(file.path(figpath,"SST_ephys_PC1.png"), width=4.82, height=4, units='in', res=150)
+png(file.path(figpath,"SST_ephys_PC1_legnotitle_logplusone.png"), width=6.025, height=5, units='in', res=150)
+p1<-ggplot(foo, aes(x=V1, y=V2, color=pca_comp_1)) + geom_point(size=1.2, alpha=0.9) 
+#+ scale_color_brewer(palette="viridis")
+
+print(p1 + ggtitle("") +
+        xlab("UMAP1") + ylab("UMAP2") +
+        #scale_color_gradient(limits = c(-8, 8)) +
+        scale_color_viridis_c(limits = c(-8, 8), oob = scales::squish) +
+        labs(color='') +
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+              panel.background = element_rect(fill = "#F2F2F2"), 
+              axis.line = element_line(color = "black"),
+              legend.spacing.x = unit(8, 'mm')))
+dev.off()
+
+png(file.path(figpath,"SST_ephys_PC2.png"), width=5.2, height=4, units='in', res=150)
+p1<-ggplot(foo, aes(x=V1, y=V2, color=pca_comp_2)) + geom_point(size=0.5) 
+#+ scale_color_brewer(palette="Set3")
+
+print(p1 + ggtitle("") +
+        xlab("UMAP1") + ylab("UMAP2") +
+        scale_color_gradient(limits = c(-8, 8)) +
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+              panel.background = element_rect(fill = "#F2F2F2"), 
+              axis.line = element_line(color = "black")))
+  
+dev.off()
+
+
+png(file.path(figpath,"SST_ephys_upstroke_adapt_ratio.png"), width=5.2, height=4, units='in', res=150)
+p3<-ggplot(foo, aes(x=V1, y=V2, color=upstroke_adapt_ratio)) + geom_point(size=0.5, alpha = 0.9) 
+#+ scale_color_brewer(palette="Set3")
+
+print(p3 + ggtitle("") +
+        xlab("UMAP1") + ylab("UMAP2") +
+        #scale_color_viridis() +
+        scale_color_viridis_c(limits = c(0.3579092, 1.05), oob = scales::squish) +
+        labs(color='Upstroke Adapt') +
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+              panel.background = element_rect(fill = "#F2F2F2"), 
+              axis.line = element_line(color = "black")))
+dev.off()
+
+png(file.path(figpath,"SST_ephys_downstroke_hero.png"), width=5.2, height=4, units='in', res=150)
+p1<-ggplot(foo, aes(x=V1, y=V2, color=downstroke_hero)) + geom_point(size=0.5) 
+
+print(p1 + ggtitle("") +
+        xlab("UMAP1") + ylab("UMAP2") +
+        scale_color_viridis_c(limits = c(-330, -50), oob = scales::squish) +
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+              panel.background = element_rect(fill = "#F2F2F2"), 
+              axis.line = element_line(color = "black")))
+dev.off()
+
+foo$width_suprathresh_hero_ms = foo$width_suprathresh_hero*1000
+png(file.path(figpath,"SST_ephys_width_suprathresh_hero.png"), width=4.84, height=4, units='in', res=150)
+p2<-ggplot(foo, aes(x=V1, y=V2, color=width_suprathresh_hero_ms)) + geom_point(size=0.5, alpha=0.9) 
+
+print(p2 + ggtitle("") +
+        xlab("UMAP1") + ylab("UMAP2") +
+        #scale_color_viridis() +
+        scale_color_viridis_c(limits = c(0.26, 1.2), oob = scales::squish) +
+        labs(color='Width (ms)') +
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+              panel.background = element_rect(fill = "#F2F2F2"), 
+              axis.line = element_line(color = "black")))
+dev.off()
+
+# Does not work
+png(file.path(figpath,"SST_ephys_composite.png"), width=14.5, height=4, units='in', res=150)
+grid.arrange(p1, p2, p3, ncol = 3, widths = c(1, 1, 1))
+dev.off()
+
+library(egg)
+png(file.path(figpath,"SST_ephys_composite.png"), width=14.5, height=4, units='in', res=150)
+ggarrange(p1,p2,p3, ncol = 3)
 dev.off()
 
 library(patchwork)

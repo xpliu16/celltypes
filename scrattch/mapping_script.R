@@ -64,14 +64,50 @@ refFolder <- "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/
 mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115_NCBI"
 data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/"
 mode = 'patchseq'
-data_fn = "20240321_RSC-204-359_macaque_patchseq_star2.7"
+data_fn = "20240425_RSC-204-361_macaque_patchseq_star2.7"
 h5ad_fn = NULL  # AI_taxonomy.h5ad 
 class_colname = 'level1.class_label'
 neigh_colname = 'level2.neighborhood_label'
 subclass_colname = 'level3.subclass_label'
 cluster_colname = 'cluster_label'
+proj_strs = "qIVSCC-MET"
 roi_strs = "STR"
 off_target = 'NN'
+
+run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_115_NCBI",
+             mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115_NCBI", 
+             data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
+             data_fn = "20240425_RSC-204-361_macaque_patchseq_star2.7",
+             mode = 'patchseq',
+             h5ad_fn = NULL, 
+             class_colname = 'level1.class_label',
+             neigh_colname = 'level2.neighborhood_label',
+             subclass_colname = 'level3.subclass_label', 
+             cluster_colname = 'cluster_label', 
+             proj_strs = "qIVSCC-MET",
+             roi_strs = "STR",
+             off_target = "NN"
+)
+
+# MTG taxonomy
+
+run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/GreatApes_Macaque_NCBI",
+             mappingFolder = "/home/xiaoping.liu/scrattch/mapping/GreatApes_Macaque_NCBI", 
+             data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
+             data_fn = "20240425_RSC-204-361_macaque_patchseq_star2.7",
+             mode = 'patchseq',
+             h5ad_fn = 'GreatApes_Macaque_NCBI.h5ad', 
+             class_colname = 'class_label',
+             neigh_colname = 'neighborhood_label',
+             subclass_colname = 'subclass_label', 
+             cluster_colname = 'cluster_label', 
+             proj_strs = "qIVSCC-MET",
+             roi_strs = "",
+             off_target = "NN"
+)
+
+
+
 
 run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode, 
                          h5ad_fn = NULL, class_colname, neigh_colname, 
@@ -264,51 +300,61 @@ write.csv(annoNew_wglia, file=file.path(mappingFolder,paste(taxname, dataname, '
 #load(file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.Rdata"', sep='_')))
 #compare to old full: var <- load('/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115/NHP_BG_204_349_AIT115_ann_map_sub_QC.Rdata')
 
-dim(annoNew_sub)
-type_counts_Corr = table(annoNew_sub[paste0(str_replace(subclass_colname,'_label',''),'_Corr')])
-type_counts_Tree = table(annoNew_sub[paste0(str_replace(subclass_colname,'_label',''),'_Tree')])
 
-type_counts_Tree = table(annoNew_sub[paste0(str_replace(cluster_colname,'_label',''),'_Tree')])
+main_subclasses = c('D1-Matrix', 'D2-Matrix', 'D1-Striosome', 'D2-Striosome', 'D1-ShellOT', 'D2-ShellOT', 'D1D2-Hybrid', 'D2-Hybrid-MCHR2', 'D1-NUDAP', 'D1-ICj', 'PVALB-COL19A1-ST18', 'SST_Chodl', 'CCK-FBXL7', 'CHAT', 'CCK-VIP-TAC3', 'LHX6-TAC3-PLPP4', 'TAC3-LHX8-PLPP4')
+#remaining_subclasses = setdiff(names(type_counts_Corr),main_subclasses) # TEMPORARILY SET TO CORR
+#main_subclasses <- c(main_subclasses, remaining_subclasses)
+
+dim(annoNew_sub)
+y = annoNew_sub[[paste0(str_replace(subclass_colname,'_label',''),'_Corr')]]
+type_counts_Corr = table(factor(y, levels=main_subclasses))
+y = annoNew_sub[[paste0(str_replace(subclass_colname,'_label',''),'_Tree')]]
+type_counts_Tree = table(factor(y, levels=main_subclasses))
+
+#type_counts_Tree = table(annoNew_sub[paste0(str_replace(cluster_colname,'_label',''),'_Tree')])
 
 # Plot NMS histogram for ROI
 png(file.path(mappingFolder, paste(taxname, dataname, 'roi_NMS_hist.png', sep='_')), width = 500, height = 350)
 hist(annoNew_roi_proj$marker_sum_norm_label)
 dev.off()
 
-
-main_subclasses = c('D1-Matrix', 'D2-Matrix', 'D1-Striosome', 'D2-Striosome', 'D1-ShellOT', 'D2-ShellOT', 'D1D2-Hybrid', 'D2-Hybrid-MCHR2', 'D1-NUDAP', 'PVALB-COL19A1-ST18', 'SST_Chodl', 'CCK-FBXL7', 'CHAT', 'CCK-VIP-TAC3', 'LHX6-TAC3-PLPP4', 'TAC3-LHX8-PLPP4')
-remaining_subclasses = setdiff(names(type_counts_Tree),main_subclasses)
-main_subclasses <- c(main_subclasses, remaining_subclasses)
-type_counts_Tree <- data.frame(type_counts_Tree)
+#type_counts_Tree <- data.frame(type_counts_Tree) 
+type_counts_Corr <- data.frame(type_counts_Corr) # TEMPORARILY SET TO CORR
 #type_counts_Tree$Var1 <- factor(type_counts_Tree$Var1, levels = main_subclasses)
-type_counts_Tree$Var1 <- ordered(type_counts_Tree$Var1, levels = main_subclasses)
+#type_counts_Tree$Var1 <- ordered(type_counts_Tree$Var1, levels = main_subclasses)
+type_counts_Corr$Var1 <- ordered(type_counts_Corr$Var1, levels = main_subclasses) # TEMPORARILY SET TO CORR
 
 colorkey <- read.csv(file = file.path(mappingFolder, 'colortable.csv'))
 #colors = list()
-rownames(type_counts_Tree) = type_counts_Tree$Var1
-type_counts_Tree['color'] <- NA
-for (c in type_counts_Tree$Var1) {
+rownames(type_counts_Corr) = type_counts_Corr$Var1     # TEMPORARILY SET TO CORR
+type_counts_Corr['color'] <- NA    # TEMPORARILY SET TO CORR
+for (c in type_counts_Corr$Var1) {      # TEMPORARILY SET TO CORR
   tmp = colorkey['colz'][colorkey['subclass']==c]
   if (length(tmp)==0) {
     tmp = '#000000'
   } # Do we need this?
   #colors <- append (colors, tmp)
-  type_counts_Tree[c,'color'] <- tmp
-  print(type_counts_Tree[c,'color'])
+  type_counts_Corr[c,'color'] <- tmp       # TEMPORARILY SET TO CORR
+  print(type_counts_Corr[c,'color'])        # TEMPORARILY SET TO CORR
   #print(colorkey$colz[colorkey['subclass']==c])
 }
 
-png(file.path(mappingFolder,'NHP_BG_AIT115_sampling_counts.png'), width = 500, height = 350)
+png(file.path(mappingFolder,'NHP_BG_AIT115_sampling_counts.png'), width = 2000, height = 1200)
 tmp <- par("mar")
 tmp[1] = tmp[1]+7
 par(mar = tmp)
 #barplot(names = type_counts_Tree$Var1, height = type_counts_Tree$Freq, las=2, col=type_counts_Tree$color)
-ggplot(type_counts_Tree,aes(x= Var1, y = Freq)) +
-       geom_bar(stat= 'Identity', fill = type_counts_Tree$color) +
+ggplot(type_counts_Corr,aes(x = Var1, y = Freq)) +                     # TEMPORARILY SET TO CORR
+       geom_bar(stat= 'Identity', fill = type_counts_Corr$color, alpha = 0.75) +
        #scale_fill_manual(values=type_counts_Tree$color) +
        xlab("") +
-       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), panel.background = element_blank()) +
-       geom_hline(yintercept=10,linetype=2, color = 'gray')
+       ylab("Count") +
+       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=40),
+             axis.text.y = element_text(size=40),
+             axis.title=element_text(size=40, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+             #axis.line = element_line(size=1.5, color = 'midnightblue'),
+             panel.background = element_blank()) +
+       geom_hline(yintercept=10,linetype=2, size = 2, color = 'gray')
 dev.off()
 
 # Striatal subclasses only (at least 5% of all cells are in dSTR or vSTR)
@@ -320,6 +366,8 @@ subclass = c("D1-Matrix", "D2-Striosome", "D2-Matrix", "D2-Hybrid-MCHR2",
              "LHX6-LHX8-GBX1", "LHX6_SST", "NAc-CCK-SEMA3A", "GP-LHX6",
              "SST-ADARB2", "SLC17A6", "WDR49-ADAM12", "D1-ICj", "NAc-LHX8")  
 
+subclass = main_subclasses
+
 # cumsum
 df_NMS <- subset(annoNew_roi, level3.subclass_Tree %in% c('SN_STH', 'SLC17A7-SATB2', 'MEIS2', 'D1-Matrix', 'D2-Matrix', 'PVALB-COL19A1-ST18'))
 png(file.path(mappingFolder,'NHP_BG_AIT115_cumNMS_SN_STH.png'), width = 500, height = 250)
@@ -329,7 +377,12 @@ ggplot(df_NMS, aes(marker_sum_norm_label, color=level3.subclass_Tree)) +
   scale_y_continuous(breaks=seq(0,1,0.1), labels = seq(0,100,10)) + 
   #scale_color_manual(values=c("#96ceb4", "#ff6f69", "#ffcc5c", "#90697c"), name='Subclass') + 
   scale_color_manual(values=c("#758f0b", "#ff6f69", "#ffcc5c", "#90697c", "#007c8f", "#cf0690"), name='Subclass') +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        axis.title=element_text(size=16, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        legend.text=element_text(size=14),
+        legend.title=element_text(size=14))
 dev.off()
 
 postpatch1 = annoNew_sub['postPatch_classification'][annoNew_sub['level3.subclass_Tree'] == 'SN_STH']
@@ -338,8 +391,8 @@ postpatch2 = annoNew_sub['postPatch_classification'][annoNew_sub['level3.subclas
 table(postpatch2)/length(postpatch2)
 
 # Count cells with ephys
-df_ephys = read.csv(file=file.path("NHP_ephys_features_20231207.csv"))
-df_id = read.csv("custom_report_20231204.csv")
+df_ephys = read.csv(file=file.path("NHP_ephys_features_20240430.csv"))
+df_id = read.csv("custom_report_20240429.csv")
 
 df2 = merge(annoNew_sub, df_id, by.x='cell_name', by.y='cell_specimen_name.', all.x = FALSE, all.y = FALSE)
 # checked these numbers against python by merging against annoNew_roi instead
@@ -351,16 +404,17 @@ grep("sag", colnames(df3))
 df_ephys = df3[265:358]
 df_ephys <- df_ephys[,colSums(is.na(df_ephys))<nrow(df_ephys)]  # drop any rows with all Na; nothing dropped
 
-df_short = subset(type_counts_Tree, select = -c(color))
-df_short['source'] = 'T'
-type_counts_ephys = table(df3$level3.subclass_Tree)
+df_short = subset(type_counts_Corr, select = -c(color))   # TEMPORARILY SET TO CORR
+df_short['source'] = 'Tx'
+#type_counts_ephys = table(df3$level3.subclass_Corr)   # TEMPORARILY SET TO CORR
+type_counts_ephys = table(factor(df3$level3.subclass_Corr, levels=main_subclasses)) 
 type_counts_ephys <- data.frame(type_counts_ephys)
-type_counts_ephys['source'] = 'E'
+type_counts_ephys['source'] = 'Ephys'
 rownames(type_counts_ephys) = type_counts_ephys$Var1
 type_counts = rbind(df_short,type_counts_ephys)
-type_counts$source <- ordered(type_counts$source, levels = c('T','E'))
+type_counts$source <- ordered(type_counts$source, levels = c('Tx','Ephys'))
 
-png(file.path(mappingFolder,'NHP_BG_AIT115_sampling_counts_wephys.png'), width = 650, height = 350)
+png(file.path(mappingFolder,'NHP_BG_AIT115_sampling_counts_wephys.png'), width = 1800, height = 1200)
 tmp <- par("mar")
 tmp[1] = tmp[1]+7
 par(mar = tmp)
@@ -369,10 +423,15 @@ ggplot(type_counts,aes(x= Var1, y = Freq, fill = source)) +
   geom_bar(stat= 'Identity',position="dodge") +
   #scale_fill_manual(values=type_counts_Tree$color) +
   xlab("") +
+  ylab("Count") +
   #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), panel.background = element_blank()) +
   theme_light() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  geom_hline(yintercept=10,linetype=2, color = 'gray') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 36), 
+        axis.text.y = element_text(size=36),
+        axis.title=element_text(size=40, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        legend.text=element_text(size=40),
+        legend.title=element_text(size=40)) +
+  geom_hline(yintercept=10,linetype=2, size = 2, color = 'gray') +
   scale_fill_manual(values = c("#62b7c4", "#d455ac"))
 dev.off()
 
@@ -405,3 +464,39 @@ anno_mapped_sub <- annoNew[inds1&inds3&inds4&inds6,]
 type_counts_Corr_QC = table(anno_mapped_sub$level3.subclass_Corr)
 type_counts_Tree_QC = table(anno_mapped_sub$level3.subclass_Tree)
 write.csv(anno_mapped_sub, file.path(mappingFolder, paste(taxname, dataname, 'ann_map_sub_QC.csv', sep='_')), row.names=FALSE)
+
+# QC files for Rachel
+# Optional load annoNew from another run
+# Run on server:
+load(file=file.path(mappingFolder,"NHP_BG_AIT_115_NCBI_RSC-204-359_roi_QC.Rdata"))
+annoNew <- annoNew_roi
+# Run on laptop:
+#load(file="/Users/xiaoping.liu/celltypes/NHP_BG_anal/NHP_BG_AIT_115/204_359/NHP_BG_204_359_AIT115_ann_map_full_QC.Rdata")
+inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annoNew$roi), TRUE,FALSE)
+inds3 = annoNew$Genes.Detected >= 1000
+inds4 = annoNew$percent_reads_aligned_total >= 25      # Very conservative, but looks like nothing chucked improperly on UMAP
+inds6 = annoNew$marker_sum_norm_label >= 0.6
+annoNew$compound_qc_pass = inds3 & inds4 & inds6
+annoNew$BG_ROI = inds1
+annoNew$acute = NaN
+annoNew$acute[annoNew$cell_specimen_project == "qIVSCC-METa"] = "TRUE"
+annoNew$acute[annoNew$cell_specimen_project == "qIVSCC-METc"] = "FALSE"
+annoNew$revisit1 = (annoNew$rna_amplification_pass_fail=="Fail") & (annoNew$compound_qc_pass == TRUE) 
+
+desired_columns = c('exp_component_name', 'cell_name', 'cell_id', 'level3.subclass_Corr', 
+                    'level3.subclass_Tree', 'rna_amplification_pass_fail', 'compound_qc_pass', 
+                    'BG_ROI', 'roi', 'species', 'postPatch_classification', 'acute', 'Virus', 
+                    'creCell')
+# Or striatal ROI?
+anno_morpho = annoNew[desired_columns]
+write.csv(anno_morpho, file.path(mappingFolder,"NHP_BG_204_359_AIT115_anno_morpho.csv"))
+
+
+Tax_Ca_Pu = AIT.anndata$obs[AIT.anndata$obs$roi_label %in% c('Macaque CaB', 'Macaque CaH', 'Macaque CaT', 'Macaque PuC', 
+                'Macaque PuPV', 'Macaque PuR'),c('level1.class_label', 'level3.subclass_label')]
+table(Tax_Ca_Pu$level1.class_label)
+table(Tax_Ca_Pu$level3.subclass_label)
+
+Ps_Ca_Pu = annoNew_sub[annoNew_sub$roi %in% c('STRdPu', 'STRdCa', 'STRd', 'STRdCP', 'STRd_CP', 'STRd_Pu', 'STRd_Ca'),]
+table(Ps_Ca_Pu$level1.class_Corr)
+table(Ps_Ca_Pu$level3.subclass_Corr)
