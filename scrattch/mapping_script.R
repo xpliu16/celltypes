@@ -1,6 +1,3 @@
-panelFolder <- "/home/xiaoping.liu/scrattch/MERFISH_panel"
-dir.create(mappingFolder, showWarnings=FALSE)
-
 suppressPackageStartupMessages({
   library("scrattch.mapping")
 })
@@ -74,6 +71,35 @@ proj_strs = "qIVSCC-MET"
 roi_strs = "STR"
 off_target = 'NN'
 
+run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116",
+             mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116", 
+             data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
+             data_fn = "20240520_RSC-204-363_macaque_patchseq_star2.7",
+             mode = 'patchseq',
+             h5ad_fn = NULL, 
+             class_colname = 'Class_label',
+             neigh_colname = 'Neighborhood_label',
+             subclass_colname = 'Subclass_label', 
+             cluster_colname = 'Cluster_label', 
+             proj_strs = "qIVSCC-MET",
+             roi_strs = "STR",
+             off_target = "NN"
+)
+refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116" 
+mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116"  
+data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/" 
+data_fn = "20240520_RSC-204-363_macaque_patchseq_star2.7" 
+mode = 'patchseq'                                                                                  
+h5ad_fn = NULL  
+class_colname = 'Class_label' 
+neigh_colname = 'Neighborhood_label' 
+subclass_colname = 'Subclass_label'  
+cluster_colname = 'Cluster_label'  
+proj_strs = "qIVSCC-MET" 
+roi_strs = "STR"
+off_target = "NN"
+
+
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_115_NCBI",
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115_NCBI", 
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
@@ -103,9 +129,23 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/sh
              cluster_colname = 'cluster_label', 
              proj_strs = "qIVSCC-MET",
              roi_strs = "",
-             off_target = "NN"
+             off_target = "Nonneuron"
 )
 
+run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/GreatApes_Human",
+             mappingFolder = "/home/xiaoping.liu/scrattch/mapping/GreatApes_Human", 
+             data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Human/patchseq/R_Object/",
+             data_fn = "20240606_RSC-122-365_human_patchseq_star2.7",
+             mode = 'patchseq',
+             h5ad_fn = 'GreatApes_Macaque_NCBI.h5ad', 
+             class_colname = 'class_label',
+             neigh_colname = 'neighborhood_label',
+             subclass_colname = 'subclass_label', 
+             cluster_colname = 'cluster_label', 
+             proj_strs = "qIVSCC-MET",
+             roi_strs = "",
+             off_target = "glia"
+)
 
 
 
@@ -185,6 +225,10 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
     taxname <- a[length(a)]
     b <- strsplit(data_fn, '_')[[1]]
     dataname <- b[2]
+    
+    if (! file.exists(mappingFolder)) {
+      dir.create(mappingFolder)
+    }
 
     save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping.Rdata', sep='_')))
     query.mapping = getMappingResults(query.mapping_obj)
@@ -301,7 +345,7 @@ write.csv(annoNew_wglia, file=file.path(mappingFolder,paste(taxname, dataname, '
 #compare to old full: var <- load('/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115/NHP_BG_204_349_AIT115_ann_map_sub_QC.Rdata')
 
 
-main_subclasses = c('D1-Matrix', 'D2-Matrix', 'D1-Striosome', 'D2-Striosome', 'D1-ShellOT', 'D2-ShellOT', 'D1D2-Hybrid', 'D2-Hybrid-MCHR2', 'D1-NUDAP', 'D1-ICj', 'PVALB-COL19A1-ST18', 'SST_Chodl', 'CCK-FBXL7', 'CHAT', 'CCK-VIP-TAC3', 'LHX6-TAC3-PLPP4', 'TAC3-LHX8-PLPP4')
+main_subclasses = c('D1-Matrix', 'D2-Matrix', 'D1-Striosome', 'D2-Striosome', 'D1-ShellOT', 'D2-ShellOT', 'D1D2-Hybrid', 'D2-Hybrid-MCHR2', 'D1-NUDAP', 'D1-ICj', 'PVALB-COL19A1-ST18', 'SST_Chodl', 'CCK-FBXL7', 'CHAT', 'CCK-VIP-TAC3', 'LHX6-TAC3-PLPP4', 'TAC3-LHX8-PLPP4', 'MEIS2')
 #remaining_subclasses = setdiff(names(type_counts_Corr),main_subclasses) # TEMPORARILY SET TO CORR
 #main_subclasses <- c(main_subclasses, remaining_subclasses)
 
@@ -369,17 +413,50 @@ subclass = c("D1-Matrix", "D2-Striosome", "D2-Matrix", "D2-Hybrid-MCHR2",
 subclass = main_subclasses
 
 # cumsum
-df_NMS <- subset(annoNew_roi, level3.subclass_Tree %in% c('SN_STH', 'SLC17A7-SATB2', 'MEIS2', 'D1-Matrix', 'D2-Matrix', 'PVALB-COL19A1-ST18'))
-png(file.path(mappingFolder,'NHP_BG_AIT115_cumNMS_SN_STH.png'), width = 500, height = 250)
-ggplot(df_NMS, aes(marker_sum_norm_label, color=level3.subclass_Tree)) + 
+df_NMS <- subset(annoNew_roi_proj, Subclass_Corr %in% c('SN_STH', 'SLC17A7-SATB2', 'MEIS2', 'D1-Matrix', 'D2-Matrix', 'PVALB-COL19A1-ST18'))
+png(file.path(mappingFolder,'NHP_BG_AIT116_cumNMS_MEIS2_SubclassCorr_scoreCorr_roi_proj.png'), width = 500, height = 250)
+#ggplot(df_NMS, aes(marker_sum_norm_label, color=Subclass_Tree)) + 
+ggplot(df_NMS, aes(score.Corr, color=Subclass_Corr)) + 
   stat_ecdf(geom = "step", size=1) + 
-  labs(x="NMS", y="Cumulative Fraction") +
+  labs(x="score.Corr", y="Cumulative Fraction") +
   scale_y_continuous(breaks=seq(0,1,0.1), labels = seq(0,100,10)) + 
   #scale_color_manual(values=c("#96ceb4", "#ff6f69", "#ffcc5c", "#90697c"), name='Subclass') + 
   scale_color_manual(values=c("#758f0b", "#ff6f69", "#ffcc5c", "#90697c", "#007c8f", "#cf0690"), name='Subclass') +
   theme_minimal() +
   theme(axis.text.x = element_text(size=14),
         axis.text.y = element_text(size=14),
+        axis.title=element_text(size=16, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        legend.text=element_text(size=14),
+        legend.title=element_text(size=14))
+dev.off()
+
+df_NMS <- subset(annoNew_sub, Subclass_Corr %in% c('MEIS2', 'LHX6-TAC3-PLPP4', 'TAC3-LHX8-PLPP4', 'D1-ICj', 'D1-NUDAP', 'D1-ShellOT', 'D2-ShellOT'))
+df_NMS$Region2 = gsub("_", "", df_NMS$Region)
+png(file.path(mappingFolder,'NHP_BG_AIT116_cumNMS_MEIS2_SubclassCorr_sub_roi_dist.png'), width = 500, height = 350)
+#ggplot(df_NMS, aes(marker_sum_norm_label, color=Subclass_Tree)) + 
+ggplot(df_NMS, aes(fill=Region2, x=Subclass_Corr)) + 
+  geom_bar(position="stack", stat="count") +
+  labs(x="", y="count") +
+  #scale_color_manual(values=c("#ff6f69", "#ffcc5c", "#90697c", "#007c8f", "#cf0690"), name='Subclass') +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size=12, angle=90),
+        axis.text.y = element_text(size=12),
+        axis.title=element_text(size=16, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        legend.text=element_text(size=14),
+        legend.title=element_text(size=14))
+dev.off()
+
+df_NMS <- subset(annoNew_sub, Subclass_Tree %in% c('MEIS2', 'LHX6-TAC3-PLPP4', 'TAC3-LHX8-PLPP4', 'D1-ICj', 'D1-NUDAP', 'D1-ShellOT', 'D2-ShellOT'))
+df_NMS$Region2 = gsub("_", "", df_NMS$Region)
+png(file.path(mappingFolder,'NHP_BG_AIT116_cumNMS_MEIS2_SubclassTree_sub_roi_dist.png'), width = 500, height = 350)
+#ggplot(df_NMS, aes(marker_sum_norm_label, color=Subclass_Tree)) + 
+ggplot(df_NMS, aes(fill=Region2, x=Subclass_Tree)) + 
+  geom_bar(position="stack", stat="count") +
+  labs(x="", y="count") +
+  #scale_color_manual(values=c("#ff6f69", "#ffcc5c", "#90697c", "#007c8f", "#cf0690"), name='Subclass') +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size=12, angle=90),
+        axis.text.y = element_text(size=12),
         axis.title=element_text(size=16, margin = margin(t = 0, r = 20, b = 0, l = 0)),
         legend.text=element_text(size=14),
         legend.title=element_text(size=14))

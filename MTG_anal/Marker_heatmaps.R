@@ -6,10 +6,11 @@ BiocManager::install("ComplexHeatmap")
 library(ComplexHeatmap)
 library(RColorBrewer)
 library(circlize)
+library(rjson)
 
 
-refFolder <- "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_115"
-mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115/"
+refFolder <- "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116"
+mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116/"
 data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object"
 
 library(scrattch.mapping)
@@ -20,21 +21,38 @@ AIT.anndata <- loadTaxonomy(refFolder)
 
 #X <-matrix(rpois(100,10),ncol=10)
 #colnames(X) = c("A","B","C","D","E","F","G","H","I","J")
-load(file.path(mappingFolder,"NHP_BG_204_329_AIT115ann_map2.Rdata"))
+#load(file.path(mappingFolder,"NHP_BG_204_329_AIT115ann_map2.Rdata"))
+vars <- load(file.path(mappingFolder,"NHP_BG_AIT_116_RSC-204-363_sub_QC.Rdata"))
+HANN_obj <- fromJSON(file.path(mappingFolder, "20240520_RSC-204-363_results.json"))
+HANN_res <- t(as.data.frame(do.call(cbind, HANN_obj$results)))
 
-anno_conf = anno_mapped_sub[anno_mapped_sub$level3.subclass_Corr =='D1-Matrix' &
-                              anno_mapped_sub$level3.subclass_Tree == 'D2-Matrix',]
-anno_conf$source = "D1/D2 conf samples"
-anno_patchseq = anno_conf
+
+#anno_conf = anno_mapped_sub[anno_mapped_sub$Subclass_Corr =='D1-Matrix' &
+#                              anno_mapped_sub$Subclass_Tree == 'D2-Matrix',]
+#anno_conf$source = "D1/D2 conf samples"
+#anno_patchseq = anno_conf
+
+annoC <- annoNew_sub[annoNew_sub$Subclass_Corr =='D1-Striosome',]
+annoC$source = "Patchseq Subclass_Corr D1-Striosome"
+annoT <- annoNew_sub[annoNew_sub$Subclass_Tree == 'D1-Striosome',]
+annoT$source = "Patchseq Subclass_Tree D1-Striosome"
+anno_patchseq = rbind(annoC,annoT)
+
 #rownames(anno_conf)
-load(paste0(data_dir, "/20230518_RSC-204-329_macaque_patchseq_star2.7_cpm.Rdata"))
-load(paste0(data_dir, "/20230518_RSC-204-329_macaque_patchseq_star2.7_samp.dat.Rdata"))
+load(paste0(data_dir, "/20240520_RSC-204-363_macaque_patchseq_star2.7_cpm.Rdata"))
+load(paste0(data_dir, "/20240520_RSC-204-363_macaque_patchseq_star2.7_samp.dat.Rdata"))
 
-gene_list = c("DRD1", "DRD2", "TAC1", "PENK", "TAC3", "RXFP1", "CPNE4", "STXBP6", "KCNIP1")
+#gene_list = c("DRD1", "DRD2", "TAC1", "PENK", "TAC3", "RXFP1", "CPNE4", "STXBP6", "KCNIP1")
+#gene_list = c('ATP2B4', 'MEIS2', 'C8H8orf34', 'ARPP21', 'PCDH15', 'ZNF804A', 'GRM7', 'TMTC1', 'NKAIN2', 'DSCAM') # For MEIS2
+#gene_list = c('TAC1', 'RELN', 'CNR1', 'FOXP2', 'TOX', 'KCNIP1', 'SORCS1', 'BACH2', 'DGKB', 'ERBB4', 'DRD2', 'CHRM3', 'GRIK3', 'NPAS3', 'FGF14', 'HS6ST3', 'GRIK2', 'NRG3')     # For Striosome from NSForest
+gene_list = c('DRD1', 'DRD2', 'KCNIP1', 'STXBP6', 'BACH2', 'FAM163A')    # For striosome from He et al.
 
-subclass_list = c("D1-Matrix", "D2-Matrix", "D1D2-Hybrid")  
+#subclass_list = c("D1-Matrix", "D2-Matrix", "D1D2-Hybrid")  
+#subclass_list = c("MEIS2", "D1-NUDAP", "D1-ShellOT")  
+
+subclass_list = c("D1-Matrix", "D2-Matrix", "D1-Striosome", 'D2-Striosome')  
 n_subsamples = 35
-fig_file = file.path(mappingFolder,'204_329_D1corr_D2tree_heatmap.jpg')
+fig_file = file.path(mappingFolder,'204_363_D1Striosome_corr_tree_heatmap_He_markers.jpg')
 
 make_heatmap <- function(samp.dat, cpmR, anno_patchseq, gene_list, AIT.anndata, subclass_list, n_subsamples, fig_file){
   query.metadata <- samp.dat
@@ -56,7 +74,8 @@ make_heatmap <- function(samp.dat, cpmR, anno_patchseq, gene_list, AIT.anndata, 
   all <- data_conf
   
   for (sc in subclass_list) {
-    keep = which(AIT.anndata$obs$level3.subclass_label == sc)
+    #keep = which(AIT.anndata$obs$level3.subclass_label == sc)
+    keep = which(AIT.anndata$obs$Subclass_label == sc)
     keep = sample(keep, n_subsamples)
     anndata_sub <- AIT.anndata$X[keep,gene_list]
     anndata_sub <- as.data.frame(anndata_sub)
@@ -79,10 +98,16 @@ make_heatmap <- function(samp.dat, cpmR, anno_patchseq, gene_list, AIT.anndata, 
 all = make_heatmap(samp.dat, cpmR, anno_patchseq, gene_list, AIT.anndata, subclass_list, n_subsamples, fig_file)
 # WHY DOESN"T IT WORK WHEN THE FIGURE MAKING CODE IS INSIDE THE FUNCTION?
 colmap <- colorRamp2(c(min(all[,1:length(gene_list)]), max(all[,1:length(gene_list)])), c("white", "red"))
-jpeg(fig_file, quality = 100, width = 750, height = 750)
+jpeg(fig_file, quality = 100, width = 1000, height = 1000)
 
-Heatmap(all[,1:length(gene_list)], cluster_rows = T, cluster_columns = F, cluster_row_slices = T, column_labels = colnames(all)[1:length(gene_list)], show_row_names = FALSE, col = colmap, row_split = all[,length(gene_list)+1])
-
+Heatmap(all[,1:length(gene_list)], cluster_rows = T, cluster_columns = F, cluster_row_slices = T, 
+        column_labels = colnames(all)[1:length(gene_list)], 
+        show_row_names = FALSE, 
+        col = colmap, 
+        #row_split = all[,length(gene_list)+1]
+        row_split = all[,'source'],
+        row_gap = unit(5, "mm"),
+        row_title_rot = 0)
 dev.off()
 # scProjection conflicts
 gene_list = c("PPP1R1B", "BCL11B", "PDE1B", "DRD2", "PENK", "DRD1", "TAC1", "RXFP1", "CPNE4", "STXBP6", "KCNIP1")
