@@ -4,7 +4,7 @@ refFolderList <- list("/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny
 "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/CrossAreal_M1", 
 "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/CrossAreal_DLPFC")
 #refFolderList <- list("/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/CrossAreal_V1") # For within region cluster comparison
-mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115/"
+mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116/"
 
 #BiocManager::install("EnhancedVolcano")
 
@@ -1166,3 +1166,88 @@ brain <- CreateSeuratObject(counts = brain.data, meta.data = brain.metadata)
 # Should you transform counts?
 Idents(brain) <- brain.metadata$level3.subclass_label
 VlnPlot(object = brain, features = 'counts', idents = subclass_short)
+
+#PVALB left and right wings
+vars<-load(file.path(mappingFolder,'Int_UMAP/PVALB_left_right.Rdata'))
+data_fn = "20240520_RSC-204-363_macaque_patchseq_star2.7"
+load(file.path(data_dir, paste0(data_fn, "_cpm.Rdata")))
+load(file.path(data_dir, paste0(data_fn, "_samp.dat.Rdata")))
+
+Expr.dat <- AIT.anndata$layers['counts']
+#inds = AIT.anndata$obs['Subclass_label']=='PVALB-COL19A1-ST18'
+#Expr.dat <- Expr.dat[inds,]
+Expr.dat<-t(Expr.dat)
+Expr.dat_norm <- Expr.dat
+
+ident_vec <- rep("Other", dim(AIT.anndata$obs)[1])
+ident_vec[is.element(AIT.anndata$obs$sample_id, PV_l_tax_names)] = "PV_l"
+ident_vec[is.element(AIT.anndata$obs$sample_id, PV_r_tax_names)] = "PV_r"
+
+dataBG_all<-Expr.dat_norm
+anno_all<-AIT.anndata$obs
+
+#brain.data     <- cbind(dataBG_all[keepGenes,],dataBG_all_PS[keepGenes,])  # Include only genes subsetted above
+brain.data <- dataBG_all
+brain.metadata <- data.frame(type = anno_all$Subclass_label)
+rownames(brain.metadata) <- colnames(brain.data)
+
+## Construct data set lists
+brain      <- CreateSeuratObject(counts = brain.data, meta.data = brain.metadata)
+Idents(brain) <- ident_vec
+
+de.markers <- FindMarkers(brain, ident.1 = "PV_l", ident.2 = "PV_r")    # If you want to downsample: max.cells.per.ident = max_n_cells
+  
+save(de.markers, file = file.path(mappingFolder,'PVALB_lr_DE.Rdata'))
+
+FCcutoff = 0.5  
+title = 'PVALB-COL19A1-ST18 Left vs. Right wing'
+
+png(file.path(mappingFolder, paste0('PVALB_lr_DEG.png')), width = 1600, height = 1200)
+p1 <- EnhancedVolcano(de.markers,
+                      lab = rownames(de.markers),
+                      x = 'avg_log2FC',
+                      y = 'p_val_adj',
+                      #pCutoff = 10e-4,
+                      pCutoff = 0.01,
+                      FCcutoff = FCcutoff,
+                      #  xlim = c(-5.5, 5.5),
+                      #  ylim = c(0, -log10(10e-12)),
+                      pointSize = 1.5,
+                      labSize = 5,
+                      title = title,
+                      #subtitle = 'Ion channel DEGs, normalized',
+                      subtitle = 'Ion channel DEGs',
+                      legendPosition = "right",
+                      legendLabSize = 14,
+                      col = c('grey30', 'forestgreen', 'royalblue', 'red2'),
+                      colAlpha = 0.9,
+                      drawConnectors = TRUE,
+                      typeConnectors = 'open',
+                      #lengthConnectors = unit(0.05, 'npc'), 
+                      hline = c(10e-8),
+                      #widthConnectors = 0.5
+)
+xr = layer_scales(p1)$x$get_limits() %>% range
+xlim(xr*0.9)
+
+p1 <- p1 + theme(axis.text.x = element_text(size=26), axis.text.y=element_text(size=26), axis.title=element_text(size=26))
+
+print(p1)
+dev.off()
+
+# Prevalence
+anno<-AIT.anndata$obs
+anno<- anno[anno$Subclass_label=='PVALB-COL19A1-ST18',]
+#tallies_m <- anno[anno$Sex_label =='M',] %>% group_by (Sex_label, cluster_label) %>% tally()
+tallies <- anno %>% group_by (Sex_label, cluster_label) %>% tally()
+tallies = data.frame(tallies)
+tallies[tallies['Sex_label']=='M','n'] <- tallies[tallies['Sex_label']=='M','n'] / sum(tallies[tallies['Sex_label']=='M','n'])
+tallies[tallies['Sex_label']=='F','n'] <- tallies[tallies['Sex_label']=='F','n'] / sum(tallies[tallies['Sex_label']=='F','n'])
+tallies = tallies[tallies$Sex_label != "unknown",]
+
+png(file.path(mappingFolder, "PVALB_composition.png"), width=10, height=5.9, units='in', res=600)
+ggplot(tallies, aes(x = Sex_label, y = n, fill = cluster_label)) + 
+  geom_bar(stat="identity") + ylab("Fraction") + xlab('Sex') + 
+  theme_gray(base_size = 24) + scale_fill_brewer(palette='Set3')
+dev.off()
+

@@ -48,7 +48,16 @@ colz <- annoBG$Subclass_color[match(subclass, annoBG$Subclass_label)]
 #annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_204_346_AIT115_ann_map_roi_QCpass.csv"))
 annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_AIT_116_RSC-204-363_sub_QC.csv"))
 
-patch_anno <- annoNew
+HANN_obj <- fromJSON(file.path(mappingFolder, "20240520_RSC-204-363_neurons_results.json"))
+HANN_res <- do.call(cbind, HANN_obj$results)
+orig_query <- read_h5ad(file.path(mappingFolder, '20240520_RSC-204-363_query.h5ad'))
+HANN_cell_names <- orig_query$obs$exp_component_name
+HANN_res <- cbind(HANN_cell_names, HANN_res)
+rownames(HANN_res) = HANN_cell_names
+HANN_res_sub <- HANN_res[annoNew$exp_component_name,]
+
+#patch_anno <- annoNew
+patch_anno <- merge(annoNew, HANN_res_sub, by.x='exp_component_name', by.y= 'row.names') 
 #patch.dat<- read_feather(paste(patchseqFolder, "data.feather", sep =""))
 load(paste0(data_dir, "/20240520_RSC-204-363_macaque_patchseq_star2.7_cpm.Rdata"))
 patch.dat <- logCPM(cpmR) 
@@ -116,7 +125,7 @@ annoBG_all_PS$Prep[annoBG_all_PS$cell_specimen_project == "qIVSCC-METc"] = "cult
 
 brain.data     <- cbind(dataBG_all[keepGenes,],dataBG_all_PS[keepGenes,])  # Include only genes subsetted above
 brain.metadata <- data.frame(set=c(rep("Taxonomy",dim(dataBG_all)[2]),rep("Patch-seq",dim(dataBG_all_PS)[2])),
-                             subclass = c(annoBG_all$Subclass_label,annoBG_all_PS$Subclass_Tree),   # Temporarily changed to Corr
+                             subclass = c(annoBG_all$Subclass_label,annoBG_all_PS$level3.subclass.assignment),   # Temporarily changed to Corr
                              QC = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$Norm_Marker_Sum.0.4_label), 
                              QC2 = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$NMS_stringent),
                              QC3 = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$library_prep_pass_fail),
@@ -124,7 +133,7 @@ brain.metadata <- data.frame(set=c(rep("Taxonomy",dim(dataBG_all)[2]),rep("Patch
                              QC5 = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$score.Corr>0.55),
                              QC6 = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$Genes.Detected<8000),
                              QC6 = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$amplified_quantity_ng),
-                             subclass_color = c(annoBG_all$Subclass_color, annoBG_all$Subclass_color[match(annoBG_all_PS$Subclass_Tree, annoBG_all$Subclass_label)]),   # TEMPORARILY CHANGED TO CORR
+                             subclass_color = c(annoBG_all$Subclass_color, annoBG_all$Subclass_color[match(annoBG_all_PS$level3.subclass.assignment, annoBG_all$Subclass_label)]),   # TEMPORARILY CHANGED TO CORR
                              area =c(rep("BG",dim(dataBG_all)[2]),annoBG_all_PS$Region),
                              subclass_corr =c(annoBG_all$Subclass_label,annoBG_all_PS$Subclass_Corr),
                              subclass_color_corr = c(annoBG_all$Subclass_color, annoBG_all$Subclass_color[match(annoBG_all_PS$Subclass_Corr, annoBG_all$Subclass_label)]),
@@ -182,7 +191,7 @@ brain.combined <- FindClusters(brain.combined, resolution = 1)
 xl <- range(brain.combined@reductions$umap@cell.embeddings[,1])
 yl <- range(brain.combined@reductions$umap@cell.embeddings[,2])
 
-mappingFolder<- file.path(mappingFolder,"Int_UMAP")
+mappingFolder<- file.path(mappingFolder,"Int_UMAP_HANN")
 #dir.create(mappingFolder, showWarnings=FALSE)
 
 jpeg(file.path(mappingFolder,'204_363_integrated_umap_dendGn_sub.jpg'), width = 2000, height = 1200, quality = 100)
@@ -206,7 +215,7 @@ jpeg(file.path(mappingFolder,'204_363_integrated_umap2_dendGn_sub.jpg'), width =
 p1 <- DimPlot(brain.combined, reduction = "umap", group.by = "set", label.size = 1, pt.size = 1, cols = c("red", "grey"), raster = F)+xlim(xl) + ylim(yl)
 p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5, raster=F)+ggtitle("FACS")+xlim(xl) + ylim(yl) +guides(color = guide_legend(override.aes = list(size=4), ncol=1))
 p3 <- DimPlot(brain.combined, group.by = "subclass",  reduction = "umap",
-              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Patch-seq (Tree)")+xlim(xl) + ylim(yl)
+              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Patch-seq (HANN)")+xlim(xl) + ylim(yl)
 p4 <- DimPlot(brain.combined, group.by = "area",  reduction = "umap",
               pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("ROI Area")+xlim(xl) + ylim(yl)
 p5 <- DimPlot(brain.combined, group.by = "subclass_corr",  reduction = "umap",
@@ -265,7 +274,7 @@ umap1 <- brain.combined@reductions$umap@cell.embeddings[,1]
 umap2 <- brain.combined@reductions$umap@cell.embeddings[,2]
 brain.metadata <- cbind(brain.metadata, umap1, umap2)
 
-main="UMAP Visualization of Tree mapped NHP_BG Patch-seq cells"
+main="UMAP Visualization of HANN mapped NHP_BG Patch-seq cells"
 pad=0.1 # was 0.1
 cex=0.6  # 0.4
 pch=19
@@ -294,7 +303,7 @@ plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
 rect(xl[1], yl[1], xl[2], yl[2], border="#aaaaaa", lwd=0.25) 
 points(umap1[inds_tx], umap2[inds_tx], col="grey84", cex=cex, pch=pch)
 points(umap1[inds_ps], umap2[inds_ps], col=brain.metadata$subclass_color[inds_ps], cex=cex, pch=pch)
-mtext(side=3, "Patchseq Cells (Tree)", cex=cex.main)
+mtext(side=3, "Patchseq Cells (HANN)", cex=cex.main)
 
 plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
 rect(xl[1], yl[1], xl[2], yl[2], border="#aaaaaa", lwd=0.25) 
@@ -425,5 +434,12 @@ table(annoBG[annoBG$sample_id %in% PV_l_tax_names,'Species_label'])
 
 save(PV_l_names, PV_r_names, PV_l_tax_names, PV_r_tax_names, file=file.path(mappingFolder, 'PVALB_left_right.Rdata'))
 
+load(file=file.path(mappingFolder, 'Int_UMAP/PVALB_left_right.Rdata'))
+#data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object"
+#load(paste0(data_dir, "/20240520_RSC-204-363_macaque_patchseq_star2.7_cpm.Rdata"))
+#patch.dat <- logCPM(cpmR) 
+annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_AIT_116_RSC-204-363_sub_QC.csv"))
+patch_anno <- annoNew
 
-
+table(patch_anno[patch_anno$exp_component_name %in% PV_l_names,'gender'])
+table(patch_anno[patch_anno$exp_component_name %in% PV_r_names,'gender'])

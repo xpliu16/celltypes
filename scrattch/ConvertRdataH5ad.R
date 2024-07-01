@@ -10,6 +10,7 @@ data_batch = "20240520_RSC-204-363"
 var <- load(file.path(data_path, paste0(data_batch, '_macaque_patchseq_star2.7_cpm.Rdata')))
 #samp.dat
 var <- load(file.path(data_path, paste0(data_batch, '_macaque_patchseq_star2.7_samp.dat.Rdata')))
+rownames(samp.dat) <- samp.dat$cell_id    # or exp_component_name or cell_name
 
 ## Add mat and samp.dat to new .h5ad and save
 AIT115_anndata <- AnnData(

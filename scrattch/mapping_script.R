@@ -74,7 +74,7 @@ off_target = 'NN'
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116",
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116", 
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
-             data_fn = "20240520_RSC-204-363_macaque_patchseq_star2.7",
+             data_fn = "20240621_RSC-204-366_macaque_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = NULL, 
              class_colname = 'Class_label',
@@ -577,3 +577,33 @@ table(Tax_Ca_Pu$level3.subclass_label)
 Ps_Ca_Pu = annoNew_sub[annoNew_sub$roi %in% c('STRdPu', 'STRdCa', 'STRd', 'STRdCP', 'STRd_CP', 'STRd_Pu', 'STRd_Ca'),]
 table(Ps_Ca_Pu$level1.class_Corr)
 table(Ps_Ca_Pu$level3.subclass_Corr)
+
+
+# Ephys feature analysis in R
+efeats <- read.csv('/home/xiaoping.liu/Desktop/NHP_ephys_features_20240430.csv')
+ids <- read.csv('/home/xiaoping.liu/Desktop/custom_report_20240610.csv')
+df <- merge(efeats, ids, by.x="cell_name", by.y="cell_specimen_id.")
+
+load(paste0(data_dir, paste0(data_fn, "_cpm.Rdata")))
+load(paste0(data_dir, paste0(data_fn, "_samp.dat.Rdata")))
+
+query.metadata <- samp.dat
+counts      <- cpmR   # Genes are rows, samples are columns
+
+query.counts   <- counts
+query.data   <- logCPM(query.counts)
+
+df <- merge(df, query.metadata, by.x= 'cell_specimen_name.', by.y='cell_name')
+df <- merge(df, query.data['PVALB',], by.x="exp_component_name", by.y='row.names')
+
+png(file.path(mappingFolder, 'width_rheo_vs_PVALB.png'), width = 500, height = 350)
+ggplot(df, aes(x=y, y=width_rheo)) + 
+  geom_point() + xlab('log2(CPM_PVALB+1)')
+dev.off()
+
+png(file.path(mappingFolder, 'mean_isi_hero_vs_PVALB.png'), width = 500, height = 350)
+ggplot(df, aes(x=y, y=mean_isi_hero)) + 
+  geom_point() + xlab('log2(CPM_PVALB+1)')
+dev.off()
+
+
