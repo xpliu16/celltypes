@@ -1,0 +1,20 @@
+ssh -o ServerAliveInterval=6000 xiaoping.liu@hpc-login.corp.alleninstitute.org
+
+srun -c 10 --mem=256G -t 10:00:00 -p celltypes --pty bash
+
+singularity shell --cleanenv docker://njjai/scrattch_mapping:0.52.2
+
+singularity shell --cleanenv docker://njjai/scrattch_mapping:0.41
+
+# singularity shell --cleanenv docker://njjai/scrattch-mapping:0.2
+
+# singularity shell --cleanenv docker://bicore/scrattch_mapping:latest
+
+R
+
+
+Put mapping results here: /allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/patch_seq/star/macaque/NHP_patchseq_BG
+
+
+pipeline_output['feature_extraction']['cell_features']['zap']
+

@@ -1,0 +1,5 @@
+Use snakemake environment - should have Tom's IPFX installed already
+
+jupyter lab
+
+anaconda3  backup  celltypes  ipfx  snakemake_ephys-main

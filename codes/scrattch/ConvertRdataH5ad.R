@@ -4,7 +4,7 @@ library("scrattch.mapping")
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116"
 data_path = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object"
 
-data_batch = "20240520_RSC-204-363"
+data_batch = "20240621_RSC-204-366"
 ## Load in data
 # cpmR
 var <- load(file.path(data_path, paste0(data_batch, '_macaque_patchseq_star2.7_cpm.Rdata')))
