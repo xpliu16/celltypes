@@ -1,2 +1,19 @@
 Command palette - Ctrl+Shift+P
->Python: Select Interpreter
+Extensions view - Ctrl+Shift+X - search bar e.g., @installed python debugger
+
+Initialize debugger - F5, select "Python File"
+Variables show up in panel on the left
+Set breakpoint - place cursor on line and press F9
+
+>Python: Select Interpreter  (select your conda environment)
+>Python: Restart language server  (after installing new library in interactive mode)
+
+Set working directory by using open folder / close folder, but it'll close out all the currently open files
+
+# %% To get an interactive block in .py file
+Right click within code and select Run in Interactive Window
+Shift+enter
+
+Increase RAM: File -> Preferences -> Settings type files.maxMemoryForLargeFilesMB
+
+#%matplotlib ipympl   # For Jupyter notebook, to get interactive plots

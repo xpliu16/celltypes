@@ -1,0 +1,20 @@
+cd /local1/snakemake_ephys/snakemake_ephys/
+
+conda activate snakemake_env
+
+export LIMS_USER="limsreader" 
+export LIMS_HOST="limsdb2"
+export LIMS_PASSWORD="limsro"
+export LIMS_PASSWORD="limsro"
+
+
+rm -r output
+rm ephys_features_array.feather
+rm ephys_features.csv
+
+snakemake -c1 --configfile config/XPL_default.yaml
+snakemake -c1 --configfile config/XPL_collabfiles.yaml
+
+
+Custom reports:
+'qIVSCC-METc', 'qIVSCC-METa'
