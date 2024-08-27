@@ -74,7 +74,7 @@ off_target = 'NN'
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116",
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116", 
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
-             data_fn = "20240621_RSC-204-366_macaque_patchseq_star2.7",
+             data_fn = "20240805_RSC-204-370_macaque_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = NULL, 
              class_colname = 'Class_label',
@@ -82,13 +82,13 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/sh
              subclass_colname = 'Subclass_label', 
              cluster_colname = 'Cluster_label', 
              proj_strs = "qIVSCC-MET",
-             roi_strs = "STR",
+             roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L",
              off_target = "NN"
 )
 refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116" 
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116"  
 data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/" 
-data_fn = "20240520_RSC-204-363_macaque_patchseq_star2.7" 
+data_fn = "20240805_RSC-204-370_macaque_patchseq_star2.7" 
 mode = 'patchseq'                                                                                  
 h5ad_fn = NULL  
 class_colname = 'Class_label' 
@@ -96,7 +96,7 @@ neigh_colname = 'Neighborhood_label'
 subclass_colname = 'Subclass_label'  
 cluster_colname = 'Cluster_label'  
 proj_strs = "qIVSCC-MET" 
-roi_strs = "STR"
+roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L"
 off_target = "NN"
 
 
@@ -309,15 +309,15 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
     inds6 = annoNew$marker_sum_norm_label >= 0.6
     
     annoNew_roi = annoNew[inds1,]
-    save(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.Rdata', sep='_')))
-    write.csv(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.csv', sep='_')))
+    save(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roiBG_QC.Rdata', sep='_')))
+    write.csv(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roiBG_QC.csv', sep='_')))
     
     annoNew_roi_proj = annoNew[inds0&inds1,]
     save(annoNew_roi_proj, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_proj_QC.Rdata', sep='_')))
     
     annoNew_sub = annoNew[inds0&inds1&inds3&inds4&inds6,]
-    save(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.Rdata', sep='_')))
-    write.csv(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.csv', sep='_')))
+    save(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'subBG_QC.Rdata', sep='_')))
+    write.csv(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'subBG_QC.csv', sep='_')))
 }
 
 a <- strsplit(refFolder,'/')[[1]]
@@ -368,7 +368,7 @@ type_counts_Corr <- data.frame(type_counts_Corr) # TEMPORARILY SET TO CORR
 #type_counts_Tree$Var1 <- ordered(type_counts_Tree$Var1, levels = main_subclasses)
 type_counts_Corr$Var1 <- ordered(type_counts_Corr$Var1, levels = main_subclasses) # TEMPORARILY SET TO CORR
 
-colorkey <- read.csv(file = file.path(mappingFolder, 'colortable.csv'))
+colorkey <- read.csv(file = file.path('/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_115', 'colortable.csv'))
 #colors = list()
 rownames(type_counts_Corr) = type_counts_Corr$Var1     # TEMPORARILY SET TO CORR
 type_counts_Corr['color'] <- NA    # TEMPORARILY SET TO CORR
@@ -383,7 +383,7 @@ for (c in type_counts_Corr$Var1) {      # TEMPORARILY SET TO CORR
   #print(colorkey$colz[colorkey['subclass']==c])
 }
 
-png(file.path(mappingFolder,'NHP_BG_AIT115_sampling_counts.png'), width = 2000, height = 1200)
+png(file.path(mappingFolder,'NHP_BG_AIT116_sampling_counts.png'), width = 2000, height = 1200)
 tmp <- par("mar")
 tmp[1] = tmp[1]+7
 par(mar = tmp)
@@ -399,6 +399,28 @@ ggplot(type_counts_Corr,aes(x = Var1, y = Freq)) +                     # TEMPORA
              #axis.line = element_line(size=1.5, color = 'midnightblue'),
              panel.background = element_blank()) +
        geom_hline(yintercept=10,linetype=2, size = 2, color = 'gray')
+dev.off()
+
+y = annoNew_sub$roi
+y = gsub("_","",y)
+y = gsub("([0-9])","",y)
+y = gsub("STRdCP","STRd",y)
+roi_counts = data.frame(table(y))
+roi_counts = roi_counts[order(-roi_counts$Freq),]
+roi_counts$y = factor(roi_counts$y, levels = roi_counts$y)
+
+png(file.path(mappingFolder,'NHP_BG_AIT116_roi_counts.png'), width = 400, height = 500)
+tmp <- par("mar")
+tmp[1] = tmp[1]+7
+par(mar = tmp)
+ggplot(roi_counts, aes(x = y, y = Freq, fill = y)) +                     # TEMPORARILY SET TO CORR
+  geom_bar(stat= 'Identity', alpha = 0.75) +
+  xlab("") +
+  ylab("Count") + guides(fill="none") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=24),
+        axis.text.y = element_text(size=24),
+        axis.title=element_text(size=24, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        panel.background = element_blank())
 dev.off()
 
 # Striatal subclasses only (at least 5% of all cells are in dSTR or vSTR)
@@ -484,7 +506,7 @@ df_ephys <- df_ephys[,colSums(is.na(df_ephys))<nrow(df_ephys)]  # drop any rows 
 df_short = subset(type_counts_Corr, select = -c(color))   # TEMPORARILY SET TO CORR
 df_short['source'] = 'Tx'
 #type_counts_ephys = table(df3$level3.subclass_Corr)   # TEMPORARILY SET TO CORR
-type_counts_ephys = table(factor(df3$level3.subclass_Corr, levels=main_subclasses)) 
+type_counts_ephys = table(factor(df3$Subclass_Corr, levels=main_subclasses)) 
 type_counts_ephys <- data.frame(type_counts_ephys)
 type_counts_ephys['source'] = 'Ephys'
 rownames(type_counts_ephys) = type_counts_ephys$Var1
@@ -512,18 +534,6 @@ ggplot(type_counts,aes(x= Var1, y = Freq, fill = source)) +
   scale_fill_manual(values = c("#62b7c4", "#d455ac"))
 dev.off()
 
-
-dir.create(file.path(mappingFolder, paste(taxname, dataname, 'map_sub_patchseqQC', sep='_')))
-#unlink(file.path(mappingFolder, "NHP_BG_204_358_AIT115_map_sub_patchseqQC/dend.RData"))
-
-buildMappingDirectory(AIT.anndata    = AIT.anndata, 
-                      mappingFolder  = file.path(mappingFolder, paste(taxname, dataname, 'map_sub_patchseqQC', sep='_')),
-                      query.data     = query.counts_sub,  # Don't need log-normalized data here
-                      query.metadata = query.metadata_sub,
-                      query.mapping  = query.mapping_sub,
-                      doPatchseqQC   = TRUE,  # Set to FALSE if not needed or if writePatchseqQCmarkers was not applied in reference generation
-)
-
 unique(annotations_mapped$roi)
 
 anno_mapped_roi = annoNew[inds1,]
@@ -545,7 +555,7 @@ write.csv(anno_mapped_sub, file.path(mappingFolder, paste(taxname, dataname, 'an
 # QC files for Rachel
 # Optional load annoNew from another run
 # Run on server:
-load(file=file.path(mappingFolder,"NHP_BG_AIT_115_NCBI_RSC-204-359_roi_QC.Rdata"))
+load(file=file.path(mappingFolder,"NHP_BG_AIT_116_RSC-204-370_roi_QC.Rdata"))
 annoNew <- annoNew_roi
 # Run on laptop:
 #load(file="/Users/xiaoping.liu/celltypes/NHP_BG_anal/NHP_BG_AIT_115/204_359/NHP_BG_204_359_AIT115_ann_map_full_QC.Rdata")
@@ -558,15 +568,15 @@ annoNew$BG_ROI = inds1
 annoNew$acute = NaN
 annoNew$acute[annoNew$cell_specimen_project == "qIVSCC-METa"] = "TRUE"
 annoNew$acute[annoNew$cell_specimen_project == "qIVSCC-METc"] = "FALSE"
-annoNew$revisit1 = (annoNew$rna_amplification_pass_fail=="Fail") & (annoNew$compound_qc_pass == TRUE) 
+annoNew$revisit = (annoNew$rna_amplification_pass_fail=="Fail") & (annoNew$compound_qc_pass == TRUE) 
 
-desired_columns = c('exp_component_name', 'cell_name', 'cell_id', 'level3.subclass_Corr', 
-                    'level3.subclass_Tree', 'rna_amplification_pass_fail', 'compound_qc_pass', 
+desired_columns = c('exp_component_name', 'cell_name', 'cell_id', 'Subclass_Corr', 
+                    'Subclass_Tree', 'rna_amplification_pass_fail', 'compound_qc_pass', 
                     'BG_ROI', 'roi', 'species', 'postPatch_classification', 'acute', 'Virus', 
-                    'creCell')
+                    'creCell', 'revisit')
 # Or striatal ROI?
 anno_morpho = annoNew[desired_columns]
-write.csv(anno_morpho, file.path(mappingFolder,"NHP_BG_204_359_AIT115_anno_morpho.csv"))
+write.csv(anno_morpho, file.path(mappingFolder,"NHP_BG_204_370_AIT116_anno_morpho.csv"))
 
 
 Tax_Ca_Pu = AIT.anndata$obs[AIT.anndata$obs$roi_label %in% c('Macaque CaB', 'Macaque CaH', 'Macaque CaT', 'Macaque PuC', 
@@ -596,14 +606,25 @@ query.data   <- logCPM(query.counts)
 df <- merge(df, query.metadata, by.x= 'cell_specimen_name.', by.y='cell_name')
 df <- merge(df, query.data['PVALB',], by.x="exp_component_name", by.y='row.names')
 
-png(file.path(mappingFolder, 'width_rheo_vs_PVALB.png'), width = 500, height = 350)
+# Subset to QC sub
+df <- merge(df, annoNew_sub, by = 'exp_component_name')
+
+# Subset to PTHLH neurons
+df <- df[df$Subclass_Corr == "PVALB-COL19A1-ST18",]
+
+# Calculate correlation
+result = cor.test(df$y, df$width_rheo, method = "kendall", use="pairwise.complete.obs")
+result = cor.test(df$y, df$mean_isi_hero, method = "kendall", use="pairwise.complete.obs")
+
+png(file.path(mappingFolder, 'width_rheo_vs_PVALB_sub_nolog.png'), width = 500, height = 350)
 ggplot(df, aes(x=y, y=width_rheo)) + 
-  geom_point() + xlab('log2(CPM_PVALB+1)')
+  geom_point() + xlab('CPM_PVALB')
 dev.off()
 
-png(file.path(mappingFolder, 'mean_isi_hero_vs_PVALB.png'), width = 500, height = 350)
+png(file.path(mappingFolder, 'mean_isi_hero_vs_PVALB_nolog.png'), width = 500, height = 350)
 ggplot(df, aes(x=y, y=mean_isi_hero)) + 
-  geom_point() + xlab('log2(CPM_PVALB+1)')
+#  geom_point() + xlab('log2(CPM_PVALB+1)')
+  geom_point() + xlab('CPM_PVALB')
 dev.off()
 
 

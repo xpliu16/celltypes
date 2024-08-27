@@ -23,9 +23,13 @@ AIT.anndata <- loadTaxonomy(refFolder)
 #colnames(X) = c("A","B","C","D","E","F","G","H","I","J")
 #load(file.path(mappingFolder,"NHP_BG_204_329_AIT115ann_map2.Rdata"))
 vars <- load(file.path(mappingFolder,"NHP_BG_AIT_116_RSC-204-363_sub_QC.Rdata"))
-HANN_obj <- fromJSON(file.path(mappingFolder, "20240520_RSC-204-363_results.json"))
-HANN_res <- t(as.data.frame(do.call(cbind, HANN_obj$results)))
-
+HANN_obj <- fromJSON(file.path(mappingFolder, "20240520_RSC-204-363_neurons_results.json"))
+HANN_res <- do.call(cbind, HANN_obj$results)
+orig_query <- read_h5ad(file.path(mappingFolder, '20240520_RSC-204-363_query.h5ad'))
+HANN_cell_names <- orig_query$obs$exp_component_name
+HANN_res <- cbind(HANN_cell_names, HANN_res)
+rownames(HANN_res) = HANN_cell_names
+HANN_res_sub <- HANN_res[rownames(annoNew_sub),]
 
 #anno_conf = anno_mapped_sub[anno_mapped_sub$Subclass_Corr =='D1-Matrix' &
 #                              anno_mapped_sub$Subclass_Tree == 'D2-Matrix',]
@@ -36,7 +40,11 @@ annoC <- annoNew_sub[annoNew_sub$Subclass_Corr =='D1-Striosome',]
 annoC$source = "Patchseq Subclass_Corr D1-Striosome"
 annoT <- annoNew_sub[annoNew_sub$Subclass_Tree == 'D1-Striosome',]
 annoT$source = "Patchseq Subclass_Tree D1-Striosome"
-anno_patchseq = rbind(annoC,annoT)
+annoH <- HANN_res_sub[HANN_res_sub$level3.subclass.assignment == "D1-Striosome",]
+annoH$source = "Patchseq Subclass_HANN D1-Striosome"
+annoH$exp_component_name = rownames(annoH)
+anno_patchseq = rbind(annoC[c('exp_component_name','source')],annoT[c('exp_component_name','source')],annoH[c('exp_component_name','source')])
+
 
 #rownames(anno_conf)
 load(paste0(data_dir, "/20240520_RSC-204-363_macaque_patchseq_star2.7_cpm.Rdata"))
@@ -52,7 +60,7 @@ gene_list = c('DRD1', 'DRD2', 'KCNIP1', 'STXBP6', 'BACH2', 'FAM163A')    # For s
 
 subclass_list = c("D1-Matrix", "D2-Matrix", "D1-Striosome", 'D2-Striosome')  
 n_subsamples = 35
-fig_file = file.path(mappingFolder,'204_363_D1Striosome_corr_tree_heatmap_He_markers.jpg')
+fig_file = file.path(mappingFolder,'204_363_D1Striosome_corr_tree_HANN_heatmap_He_markers.jpg')
 
 make_heatmap <- function(samp.dat, cpmR, anno_patchseq, gene_list, AIT.anndata, subclass_list, n_subsamples, fig_file){
   query.metadata <- samp.dat
