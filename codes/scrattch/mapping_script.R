@@ -74,7 +74,7 @@ off_target = 'NN'
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116",
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116", 
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
-             data_fn = "20240805_RSC-204-370_macaque_patchseq_star2.7",
+             data_fn = "20240909_RSC-204-373_macaque_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = NULL, 
              class_colname = 'Class_label',
@@ -88,7 +88,7 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/sh
 refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116" 
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116"  
 data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/" 
-data_fn = "20240805_RSC-204-370_macaque_patchseq_star2.7" 
+data_fn = "20240909_RSC-204-373_macaque_patchseq_star2.7" 
 mode = 'patchseq'                                                                                  
 h5ad_fn = NULL  
 class_colname = 'Class_label' 
@@ -490,7 +490,7 @@ postpatch2 = annoNew_sub['postPatch_classification'][annoNew_sub['level3.subclas
 table(postpatch2)/length(postpatch2)
 
 # Count cells with ephys
-df_ephys = read.csv(file=file.path("NHP_ephys_features_20240430.csv"))
+df_ephys = read.csv(file=file.path("NHP_ephys_features_20240822.csv"))
 df_id = read.csv("custom_report_20240429.csv")
 
 df2 = merge(annoNew_sub, df_id, by.x='cell_name', by.y='cell_specimen_name.', all.x = FALSE, all.y = FALSE)
@@ -513,7 +513,7 @@ rownames(type_counts_ephys) = type_counts_ephys$Var1
 type_counts = rbind(df_short,type_counts_ephys)
 type_counts$source <- ordered(type_counts$source, levels = c('Tx','Ephys'))
 
-png(file.path(mappingFolder,'NHP_BG_AIT115_sampling_counts_wephys.png'), width = 1800, height = 1200)
+png(file.path(mappingFolder,'NHP_BG_AIT116_sampling_counts_wephys.png'), width = 1800, height = 1200)
 tmp <- par("mar")
 tmp[1] = tmp[1]+7
 par(mar = tmp)
@@ -555,7 +555,7 @@ write.csv(anno_mapped_sub, file.path(mappingFolder, paste(taxname, dataname, 'an
 # QC files for Rachel
 # Optional load annoNew from another run
 # Run on server:
-load(file=file.path(mappingFolder,"NHP_BG_AIT_116_RSC-204-370_roi_QC.Rdata"))
+load(file=file.path(mappingFolder,"NHP_BG_AIT_116_RSC-204-373_roi_QC.Rdata"))
 annoNew <- annoNew_roi
 # Run on laptop:
 #load(file="/Users/xiaoping.liu/celltypes/NHP_BG_anal/NHP_BG_AIT_115/204_359/NHP_BG_204_359_AIT115_ann_map_full_QC.Rdata")
@@ -576,7 +576,7 @@ desired_columns = c('exp_component_name', 'cell_name', 'cell_id', 'Subclass_Corr
                     'creCell', 'revisit')
 # Or striatal ROI?
 anno_morpho = annoNew[desired_columns]
-write.csv(anno_morpho, file.path(mappingFolder,"NHP_BG_204_370_AIT116_anno_morpho.csv"))
+write.csv(anno_morpho, file.path(mappingFolder,"NHP_BG_204_373_AIT116_anno_morpho.csv"))
 
 
 Tax_Ca_Pu = AIT.anndata$obs[AIT.anndata$obs$roi_label %in% c('Macaque CaB', 'Macaque CaH', 'Macaque CaT', 'Macaque PuC', 

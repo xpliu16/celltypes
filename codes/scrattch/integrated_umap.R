@@ -24,13 +24,18 @@ annoBG <- annoBG[match(rownames(Expr.dat),annoBG$sample_id),]
 #            'L4 IT')
 #subclass<- unique(annoBG$Subclass_label[annoBG$level1.class_label!="NN"])      # BUT WE DON'T WANT NONNEURONAL CELL TYPES
 # Striatal subclasses only (at least 5% of all cells are in dSTR or vSTR)
+#subclass = c("D1-Matrix", "D2-Striosome", "D2-Matrix", "D2-Hybrid-MCHR2", 
+#              "D1D2-Hybrid", "LHX6-TAC3-PLPP4", "D1-Striosome", "SLC17A7-SATB2",
+#              "PVALB-COL19A1-ST18", "LHX6-SATB1", "CCK-VIP-TAC3", "CCK-FBXL7",
+#              "SST-RSPO2", "SST_Chodl", "D2-ShellOT", "CHAT", "D1-ShellOT",
+#              "D1-NUDAP", "TAC3-LHX8-PLPP4", "MEIS2", "SN_STH_GPe-MEIS2-OTX2",
+#              "LHX6-LHX8-GBX1", "LHX6_SST", "NAc-CCK-SEMA3A", "GP-LHX6",
+#              "SST-ADARB2", "SLC17A6", "WDR49-ADAM12", "D1-ICj", "NAc-LHX8")   
 subclass = c("D1-Matrix", "D2-Striosome", "D2-Matrix", "D2-Hybrid-MCHR2", 
-              "D1D2-Hybrid", "LHX6-TAC3-PLPP4", "D1-Striosome", "SLC17A7-SATB2",
-              "PVALB-COL19A1-ST18", "LHX6-SATB1", "CCK-VIP-TAC3", "CCK-FBXL7",
-              "SST-RSPO2", "SST_Chodl", "D2-ShellOT", "CHAT", "D1-ShellOT",
-              "D1-NUDAP", "TAC3-LHX8-PLPP4", "MEIS2", "SN_STH_GPe-MEIS2-OTX2",
-              "LHX6-LHX8-GBX1", "LHX6_SST", "NAc-CCK-SEMA3A", "GP-LHX6",
-              "SST-ADARB2", "SLC17A6", "WDR49-ADAM12", "D1-ICj", "NAc-LHX8")   
+             "D1D2-Hybrid", "LHX6-TAC3-PLPP4", "D1-Striosome",
+             "PVALB-COL19A1-ST18", "CCK-VIP-TAC3", "CCK-FBXL7",
+             "SST_Chodl", "D2-ShellOT", "CHAT", "D1-ShellOT",
+             "D1-NUDAP", "TAC3-LHX8-PLPP4", "D1-ICj")   
 
 kpsubclass<-is.element(annoBG$Subclass_label,subclass)
 annoBG<-annoBG[kpsubclass,]
@@ -46,20 +51,21 @@ colz <- annoBG$Subclass_color[match(subclass, annoBG$Subclass_label)]
 #var<-load(file.path(mappingFolder,"NHP_BG_204_337_AIT115_ann_map_roi.Rdata"))
 #load(file.path(mappingFolder,"NHP_BG_204_337_AIT115_ann_map_QC.Rdata"))
 #annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_204_346_AIT115_ann_map_roi_QCpass.csv"))
-annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_AIT_116_RSC-204-363_sub_QC.csv"))
+#annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_AIT_116_RSC-204-370_sub_QC.csv"))
+annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_AIT_116_RSC-204-373_sub_QC.csv"))
 
-HANN_obj <- fromJSON(file.path(mappingFolder, "20240520_RSC-204-363_neurons_results.json"))
+HANN_obj <- fromJSON(file.path(mappingFolder, "20240621_RSC-204-366_neurons_results.json"))
 HANN_res <- do.call(cbind, HANN_obj$results)
-orig_query <- read_h5ad(file.path(mappingFolder, '20240520_RSC-204-363_query.h5ad'))
+orig_query <- read_h5ad(file.path(mappingFolder, '20240621_RSC-204-366_query.h5ad'))
 HANN_cell_names <- orig_query$obs$exp_component_name
 HANN_res <- cbind(HANN_cell_names, HANN_res)
 rownames(HANN_res) = HANN_cell_names
 HANN_res_sub <- HANN_res[annoNew$exp_component_name,]
 
-#patch_anno <- annoNew
-patch_anno <- merge(annoNew, HANN_res_sub, by.x='exp_component_name', by.y= 'row.names') 
+patch_anno <- annoNew
+#patch_anno <- merge(annoNew, HANN_res_sub, by.x='exp_component_name', by.y= 'row.names') 
 #patch.dat<- read_feather(paste(patchseqFolder, "data.feather", sep =""))
-load(paste0(data_dir, "/20240520_RSC-204-363_macaque_patchseq_star2.7_cpm.Rdata"))
+load(paste0(data_dir, "/20240909_RSC-204-373_macaque_patchseq_star2.7_cpm.Rdata"))
 patch.dat <- logCPM(cpmR) 
 
 #patch_anno<- patch_anno[match(patch.dat$sample_id,patch_anno$sample_id),]
@@ -77,6 +83,11 @@ glial.genes <-as.vector(as.matrix(bind_cols(markers$Astrocytes_on,markers$Endoth
                                             markers$Ependyma_on)))
 glial.exclude <- !(is.element(colnames(patch.dat),glial.genes))
 patch.dat <- patch.dat[,glial.exclude]
+
+sex.genes <- read.table(file.path(mappingFolder, "Jeremy_exclude_gene_lists/sex_genes.txt"),
+                        sep = "")
+sex.exclude <- !(is.element(colnames(patch.dat),sex.genes[[1]]))
+patch.dat <- patch.dat[,sex.exclude]
 
 genelist <- colnames(patch.dat)
 genesSamp1 <- is.element(colnames(Expr.dat),genelist)
@@ -100,8 +111,8 @@ patch.dat <- patch.dat[,genesSamp2]
 #Expr.dat<-as.matrix(Expr.dat[,names(Expr.dat)!="cell_id"])   # These are non unique?
 #rownames(Expr.dat)<-annoBG$sample_id
 Expr.dat<-t(Expr.dat)
-### Continue
 #patch.dat<-as.matrix(patch.dat[,names(patch.dat)!="cell_id"])
+
 rownames(patch.dat)<-patch_anno$exp_component_name
 patch.dat<-t(patch.dat)    # BOTH INTO GENE X CELL
 #patch.dat<-log2(patch.dat+1).    # CHECK MAX(PATCH.DAT) TO SEE IF YOU NEED TO LOG TRANSFORM
@@ -125,7 +136,8 @@ annoBG_all_PS$Prep[annoBG_all_PS$cell_specimen_project == "qIVSCC-METc"] = "cult
 
 brain.data     <- cbind(dataBG_all[keepGenes,],dataBG_all_PS[keepGenes,])  # Include only genes subsetted above
 brain.metadata <- data.frame(set=c(rep("Taxonomy",dim(dataBG_all)[2]),rep("Patch-seq",dim(dataBG_all_PS)[2])),
-                             subclass = c(annoBG_all$Subclass_label,annoBG_all_PS$level3.subclass.assignment),   # Temporarily changed to Corr
+#                             subclass = c(annoBG_all$Subclass_label,annoBG_all_PS$Subclass.assignment),   # Temporarily changed to Corr
+                             subclass = c(annoBG_all$Subclass_label,annoBG_all_PS$Subclass_Corr), 
                              QC = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$Norm_Marker_Sum.0.4_label), 
                              QC2 = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$NMS_stringent),
                              QC3 = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$library_prep_pass_fail),
@@ -133,10 +145,11 @@ brain.metadata <- data.frame(set=c(rep("Taxonomy",dim(dataBG_all)[2]),rep("Patch
                              QC5 = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$score.Corr>0.55),
                              QC6 = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$Genes.Detected<8000),
                              QC6 = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$amplified_quantity_ng),
-                             subclass_color = c(annoBG_all$Subclass_color, annoBG_all$Subclass_color[match(annoBG_all_PS$level3.subclass.assignment, annoBG_all$Subclass_label)]),   # TEMPORARILY CHANGED TO CORR
+#                             subclass_color = c(annoBG_all$Subclass_color, annoBG_all$Subclass_color[match(annoBG_all_PS$Subclass.assignment, annoBG_all$Subclass_label)]),   # TEMPORARILY CHANGED TO CORR
+                             subclass_color = c(annoBG_all$Subclass_color, annoBG_all$Subclass_color[match(annoBG_all_PS$Subclass_Corr, annoBG_all$Subclass_label)]), 
                              area =c(rep("BG",dim(dataBG_all)[2]),annoBG_all_PS$Region),
-                             subclass_corr =c(annoBG_all$Subclass_label,annoBG_all_PS$Subclass_Corr),
-                             subclass_color_corr = c(annoBG_all$Subclass_color, annoBG_all$Subclass_color[match(annoBG_all_PS$Subclass_Corr, annoBG_all$Subclass_label)]),
+                             subclass_tree =c(annoBG_all$Subclass_label,annoBG_all_PS$Subclass_Tree),
+                             subclass_color_tree = c(annoBG_all$Subclass_color, annoBG_all$Subclass_color[match(annoBG_all_PS$Subclass_Tree, annoBG_all$Subclass_label)]),
                              prep = c(rep("acute",dim(dataBG_all)[2]),annoBG_all_PS$Prep))
 rownames(brain.metadata) <- colnames(brain.data)
 
@@ -182,7 +195,9 @@ DefaultAssay(brain.combined) <- "integrated"
 brain.combined <- ScaleData(brain.combined, verbose = FALSE)
 brain.combined <- RunPCA(brain.combined, npcs = dims, verbose = FALSE)
 
-brain.combined <- RunUMAP(brain.combined, reduction = "pca", dims = 1:dims)
+#brain.combined <- RunUMAP(brain.combined, reduction = "pca", dims = 1:dims)
+brain.combined <- RunUMAP(brain.combined, reduction = "pca", dims = 1:dims, 
+                          n.neighbors = 180, n.components = 2, min.dist = 0.3)
 brain.combined <- FindNeighbors(brain.combined, reduction = "pca", dims = 1:dims)
 brain.combined <- FindClusters(brain.combined, resolution = 1)
 
@@ -191,10 +206,11 @@ brain.combined <- FindClusters(brain.combined, resolution = 1)
 xl <- range(brain.combined@reductions$umap@cell.embeddings[,1])
 yl <- range(brain.combined@reductions$umap@cell.embeddings[,2])
 
-mappingFolder<- file.path(mappingFolder,"Int_UMAP_HANN")
+mappingFolder<- file.path(mappingFolder,"Int_UMAP_373_STR")
+dir.create(mappingFolder, showWarnings = FALSE)
 #dir.create(mappingFolder, showWarnings=FALSE)
 
-jpeg(file.path(mappingFolder,'204_363_integrated_umap_dendGn_sub.jpg'), width = 2000, height = 1200, quality = 100)
+jpeg(file.path(mappingFolder,'204_373_integrated_umap_dendGn_sub_180neigh.jpg'), width = 2000, height = 1200, quality = 100)
 
 DimPlot(brain.combined, reduction = "umap", split.by = "set",pt.size = 1)
 umap = as.matrix(brain.combined@reductions[["umap"]]@cell.embeddings)
@@ -210,36 +226,37 @@ dev.off()
 # For all subclasses
 #jpeg(file.path(mappingFolder,'204_337_integrated_umap2_dendGn.jpg'), width = 2500, height = 1600, quality = 100)
 # For STR subclasses only
-jpeg(file.path(mappingFolder,'204_363_integrated_umap2_dendGn_sub.jpg'), width = 2000, height = 1600, quality = 100)
+jpeg(file.path(mappingFolder,'204_373_integrated_umap2_dendGn_sub.jpg'), width = 2000, height = 1600, quality = 100)
 
 p1 <- DimPlot(brain.combined, reduction = "umap", group.by = "set", label.size = 1, pt.size = 1, cols = c("red", "grey"), raster = F)+xlim(xl) + ylim(yl)
 p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5, raster=F)+ggtitle("FACS")+xlim(xl) + ylim(yl) +guides(color = guide_legend(override.aes = list(size=4), ncol=1))
 p3 <- DimPlot(brain.combined, group.by = "subclass",  reduction = "umap",
-              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Patch-seq (HANN)")+xlim(xl) + ylim(yl)
+              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Patch-seq (Corr)")+xlim(xl) + ylim(yl)
 p4 <- DimPlot(brain.combined, group.by = "area",  reduction = "umap",
               pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("ROI Area")+xlim(xl) + ylim(yl)
-p5 <- DimPlot(brain.combined, group.by = "subclass_corr",  reduction = "umap",
-              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Patch-seq (Corr)")+xlim(xl) + ylim(yl)
+p5 <- DimPlot(brain.combined, group.by = "subclass_tree",  reduction = "umap",
+              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Patch-seq (Tree)")+xlim(xl) + ylim(yl)
 p6 <- DimPlot(brain.combined, group.by = "prep",  reduction = "umap",
               pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Prep")+xlim(xl) + ylim(yl)
 plot_grid(p1, p2, p3,p4,p5,p6, ncol=2)
 
 dev.off()
 
+
 #unique(brain.combined$subclass_corr[brain.combined$set=="PatchSeq"])
 #unique(brain.combined$subclass[brain.combined$set=="PatchSeq"])
 #cols = c('V0' = 'red', 'V6' = 'grey', 'V8' = 'grey')
 
-jpeg(file.path(mappingFolder,'204_363_integrated_umap3_dendGn_sub.jpg'), width = 2400, height = 1200,
+jpeg(file.path(mappingFolder,'204_373_integrated_umap3_dendGn_sub.jpg'), width = 2400, height = 1200,
      pointsize = 12, quality = 100)
 plot_grid(p1,p2)
 p1+p2    # WHAT DOES THIS DO?
 dev.off()
 
-install.packages("pals")
-library(pals)
+#install.packages("pals")
+#library(pals)
 colz <- DiscretePalette(n = length(unique(annoBG_all$Subclass_label)), palette = "polychrome")
-jpeg(file.path(mappingFolder,'204_363_integrated_umap4_dendGn_lab_repel_sub.jpg'), width = 2600, height = 1200,
+jpeg(file.path(mappingFolder,'204_373_integrated_umap4_dendGn_lab_repel_sub.jpg'), width = 2600, height = 1200,
      pointsize = 12, quality = 100)
 p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5, cols=colz, label=T, repel=T, raster=F)+ggtitle("FACS")+xlim(xl) + ylim(yl)
 #LabelClusters(plot = p2, id = 'subclass')
@@ -249,16 +266,16 @@ dev.off()
 
 # Used for figures
 
-#colz <- DiscretePalette(n = length(unique(annoBG_all$Subclass_label)), palette = "polychrome")
 sc_names = sort(unique(brain.combined@meta.data$subclass))
-colz <- brain.combined@meta.data$subclass_color_corr[match(sc_names, brain.combined@meta.data$subclass)]  
+#colz <- brain.combined@meta.data$subclass_color_tree[match(sc_names, brain.combined@meta.data$subclass)]  
+colz <- DiscretePalette(n = length(unique(annoBG_all$Subclass_label)), palette = "polychrome")
 #jpeg(file.path(mappingFolder,'204_359_integrated_umap4_dendGn_nolab2_sub.jpg'), width = 3500, height = 1500,
 #     pointsize = 12, quality = 100)
-png(file.path(mappingFolder,'204_363_integrated_umap4_dendGn_nolab2_sub.png'), width = 3500, height = 1500, pointsize = 12)
-p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = 0.5, cols=colz, raster=F)+
+png(file.path(mappingFolder,'204_373_integrated_umap4_dendGn_nolab2_sub.png'), width = 3100, height = 1500, pointsize = 12)
+p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = 1, cols=colz, raster=F)+
   xlim(xl) + ylim(yl) +  guides(color = guide_legend(override.aes = list(size=4), ncol=1) ) 
 #LabelClusters(plot = p2, id = 'subclass')
-p1<- p1 + theme(axis.text.x=element_text(size=45), axis.text.y=element_text(size=45), axis.title=element_text(size=45, face="bold", margin=0.1), legend.text = element_text(size=20))
+p1<- p1 + theme(axis.text.x=element_text(size=45), axis.text.y=element_text(size=45), axis.title=element_text(size=45, face="bold", margin=0.1), legend.position="none")
 p2<- p2 + theme(axis.text.x=element_text(size=45), axis.text.y=element_text(size=45), axis.title=element_text(size=45, face="bold", margin=0.1), legend.text = element_text(size=25))
 plot_grid(p1,p2)
 p1+p2    # WHAT DOES THIS DO?
@@ -274,17 +291,17 @@ umap1 <- brain.combined@reductions$umap@cell.embeddings[,1]
 umap2 <- brain.combined@reductions$umap@cell.embeddings[,2]
 brain.metadata <- cbind(brain.metadata, umap1, umap2)
 
-main="UMAP Visualization of HANN mapped NHP_BG Patch-seq cells"
+main="UMAP Visualization of Corr mapped NHP_BG Patch-seq cells"
 pad=0.1 # was 0.1
 cex=0.6  # 0.4
 pch=19
 cex.main=1
-cex.legend=0.7
+cex.legend=1
 
 inds_ps = brain.metadata$set == "Patch-seq"
 inds_tx = brain.metadata$set == "Taxonomy"
 
-jpeg(file.path(mappingFolder,'204_363_integrated_umap_Corr_Tree_dendGn_sub.jpg'), width = 1500, height = 600,
+jpeg(file.path(mappingFolder,'204_373_integrated_umap_Corr_Tree_dendGn_sub.jpg'), width = 1500, height = 600,
      pointsize = 12, quality = 100)
 par(mfrow=c(1,3))
 plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
@@ -303,17 +320,17 @@ plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
 rect(xl[1], yl[1], xl[2], yl[2], border="#aaaaaa", lwd=0.25) 
 points(umap1[inds_tx], umap2[inds_tx], col="grey84", cex=cex, pch=pch)
 points(umap1[inds_ps], umap2[inds_ps], col=brain.metadata$subclass_color[inds_ps], cex=cex, pch=pch)
-mtext(side=3, "Patchseq Cells (HANN)", cex=cex.main)
+mtext(side=3, "Patchseq Cells (Corr)", cex=cex.main)
 
 plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
 rect(xl[1], yl[1], xl[2], yl[2], border="#aaaaaa", lwd=0.25) 
 points(umap1[inds_tx], umap2[inds_tx], col="grey84", cex=cex, pch=pch)
-points(umap1[inds_ps], umap2[inds_ps], col=brain.metadata$subclass_color_corr[inds_ps], cex=cex, pch=pch)
-mtext(side=3, "Patchseq Cells (Corr)", cex=cex.main)
+points(umap1[inds_ps], umap2[inds_ps], col=brain.metadata$subclass_color_tree[inds_ps], cex=cex, pch=pch)
+mtext(side=3, "Patchseq Cells (Tree)", cex=cex.main)
 
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_363_integrated_umap_QC_dendGn_sub.jpg'), width = 2400, height = 1600, quality = 100)
+jpeg(file.path(mappingFolder,'204_373_integrated_umap_QC_dendGn_sub.jpg'), width = 2400, height = 1600, quality = 100)
 p7 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC") + ggtitle("NMS > 0.4")
 #p8 <- DimPlot(brain.combined, reduction = "umap", cells=colnames(dataBG_all_PS), group.by = "QC2") + ggtitle("NMS stringent")
 p8 <- DimPlot(brain.combined, reduction = "umap",pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC5") + ggtitle("score.Corr > 0.55")
@@ -322,7 +339,7 @@ p9 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(da
 plot_grid(p1, p2, p6, p7, p8, p9, nrow=2)
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_363_integrated_umap_QC2_dendGn_sub.jpg'), width = 2400, height = 1600, quality = 100)
+jpeg(file.path(mappingFolder,'204_373_integrated_umap_QC2_dendGn_sub.jpg'), width = 2400, height = 1600, quality = 100)
 p10 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC3") + ggtitle("Library_prep_pass_fail")
 p11 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC6") + ggtitle("Genes detected < 8000")
 p12 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC2") + ggtitle("NMS_stringent")
@@ -436,9 +453,9 @@ save(PV_l_names, PV_r_names, PV_l_tax_names, PV_r_tax_names, file=file.path(mapp
 
 load(file=file.path(mappingFolder, 'Int_UMAP/PVALB_left_right.Rdata'))
 #data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object"
-#load(paste0(data_dir, "/20240520_RSC-204-363_macaque_patchseq_star2.7_cpm.Rdata"))
+#load(paste0(data_dir, "/20240520_RSC-204-370_macaque_patchseq_star2.7_cpm.Rdata"))
 #patch.dat <- logCPM(cpmR) 
-annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_AIT_116_RSC-204-363_sub_QC.csv"))
+annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_AIT_116_RSC-204-370_sub_QC.csv"))
 patch_anno <- annoNew
 
 table(patch_anno[patch_anno$exp_component_name %in% PV_l_names,'gender'])
