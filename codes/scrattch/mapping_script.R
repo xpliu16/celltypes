@@ -334,9 +334,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
     #inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annoNew$roi), TRUE,FALSE)
     #inds2 = annotations_mapped$library_prep_pass_fail == "Pass"   # Chucks good samples
     inds3 = annoNew$Genes.Detected >= 1000
-    inds4 = annoNew$percent_r
-data_fn = "20240909_RSC-204-373_macaque_patchseq_star2.7" 
->>>>>>> 29b190ae81ce3df9b40159eb5095e95731035f00eads_aligned_total >= 25      # Very conservative, but looks like nothing chucked improperly on UMAP
+    inds4 = annoNew$percent_reads_aligned_total >= 25      # Very conservative, but looks like nothing chucked improperly on UMAP
     #inds5 = annotations_mapped$percent_reads_aligned_to_introns > 25   # Chucks good samples
     #inds6 = annotations_mapped$score.Corr > 0.6
     inds6 = annoNew$marker_sum_norm_label >= 0.6
@@ -382,8 +380,6 @@ main_subclasses = c('D1-Matrix', 'D2-Matrix', 'D1-Striosome', 'D2-Striosome', 'D
 #remaining_subclasses = setdiff(names(type_counts_Corr),main_subclasses) # TEMPORARILY SET TO CORR
 #main_subclasses <- c(main_subclasses, remaining_subclasses)
 
-data_fn = "20240909_RSC-204-373_macaque_patchseq_star2.7" 
->>>>>>> 29b190ae81ce3df9b40159eb5095e95731035f00
 dim(annoNew_sub)
 y = annoNew_sub[[paste0(str_replace(subclass_colname,'_label',''),'_Corr')]]
 type_counts_Corr = table(factor(y, levels=main_subclasses))
