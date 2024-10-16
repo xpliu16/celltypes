@@ -333,7 +333,9 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
     #inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annoNew$roi), TRUE,FALSE)
     #inds2 = annotations_mapped$library_prep_pass_fail == "Pass"   # Chucks good samples
     inds3 = annoNew$Genes.Detected >= 1000
-    inds4 = annoNew$percent_reads_aligned_total >= 25      # Very conservative, but looks like nothing chucked improperly on UMAP
+    inds4 = annoNew$percent_r
+data_fn = "20240909_RSC-204-373_macaque_patchseq_star2.7" 
+>>>>>>> 29b190ae81ce3df9b40159eb5095e95731035f00eads_aligned_total >= 25      # Very conservative, but looks like nothing chucked improperly on UMAP
     #inds5 = annotations_mapped$percent_reads_aligned_to_introns > 25   # Chucks good samples
     #inds6 = annotations_mapped$score.Corr > 0.6
     inds6 = annoNew$marker_sum_norm_label >= 0.6
@@ -379,6 +381,8 @@ main_subclasses = c('D1-Matrix', 'D2-Matrix', 'D1-Striosome', 'D2-Striosome', 'D
 #remaining_subclasses = setdiff(names(type_counts_Corr),main_subclasses) # TEMPORARILY SET TO CORR
 #main_subclasses <- c(main_subclasses, remaining_subclasses)
 
+data_fn = "20240909_RSC-204-373_macaque_patchseq_star2.7" 
+>>>>>>> 29b190ae81ce3df9b40159eb5095e95731035f00
 dim(annoNew_sub)
 y = annoNew_sub[[paste0(str_replace(subclass_colname,'_label',''),'_Corr')]]
 type_counts_Corr = table(factor(y, levels=main_subclasses))
@@ -520,7 +524,7 @@ postpatch2 = annoNew_sub['postPatch_classification'][annoNew_sub['level3.subclas
 table(postpatch2)/length(postpatch2)
 
 # Count cells with ephys
-df_ephys = read.csv(file=file.path("NHP_ephys_features_20240430.csv"))
+df_ephys = read.csv(file=file.path("NHP_ephys_features_20240822.csv"))
 df_id = read.csv("custom_report_20240429.csv")
 
 df2 = merge(annoNew_sub, df_id, by.x='cell_name', by.y='cell_specimen_name.', all.x = FALSE, all.y = FALSE)
@@ -543,7 +547,7 @@ rownames(type_counts_ephys) = type_counts_ephys$Var1
 type_counts = rbind(df_short,type_counts_ephys)
 type_counts$source <- ordered(type_counts$source, levels = c('Tx','Ephys'))
 
-png(file.path(mappingFolder,'NHP_BG_AIT115_sampling_counts_wephys.png'), width = 1800, height = 1200)
+png(file.path(mappingFolder,'NHP_BG_AIT116_sampling_counts_wephys.png'), width = 1800, height = 1200)
 tmp <- par("mar")
 tmp[1] = tmp[1]+7
 par(mar = tmp)
@@ -585,7 +589,7 @@ write.csv(anno_mapped_sub, file.path(mappingFolder, paste(taxname, dataname, 'an
 # QC files for Rachel
 # Optional load annoNew from another run
 # Run on server:
-load(file=file.path(mappingFolder,"NHP_BG_AIT_116_RSC-204-370_roi_QC.Rdata"))
+load(file=file.path(mappingFolder,"NHP_BG_AIT_116_RSC-204-373_roi_QC.Rdata"))
 annoNew <- annoNew_roi
 # Run on laptop:
 #load(file="/Users/xiaoping.liu/celltypes/NHP_BG_anal/NHP_BG_AIT_115/204_359/NHP_BG_204_359_AIT115_ann_map_full_QC.Rdata")
@@ -606,7 +610,7 @@ desired_columns = c('exp_component_name', 'cell_name', 'cell_id', 'Subclass_Corr
                     'creCell', 'revisit')
 # Or striatal ROI?
 anno_morpho = annoNew[desired_columns]
-write.csv(anno_morpho, file.path(mappingFolder,"NHP_BG_204_370_AIT116_anno_morpho.csv"))
+write.csv(anno_morpho, file.path(mappingFolder,"NHP_BG_204_373_AIT116_anno_morpho.csv"))
 
 
 Tax_Ca_Pu = AIT.anndata$obs[AIT.anndata$obs$roi_label %in% c('Macaque CaB', 'Macaque CaH', 'Macaque CaT', 'Macaque PuC', 
