@@ -1,6 +1,7 @@
 library(scrattch.mapping)
 #install.packages('metap')
 #library(metap)
+library("readxl")
 
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116"
 #refFolder =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_115/patchseq"
@@ -115,7 +116,7 @@ Expr.dat<-t(Expr.dat)
 
 rownames(patch.dat)<-patch_anno$exp_component_name
 patch.dat<-t(patch.dat)    # BOTH INTO GENE X CELL
-#patch.dat<-log2(patch.dat+1).    # CHECK MAX(PATCH.DAT) TO SEE IF YOU NEED TO LOG TRANSFORM
+#patch.dat<-log2(patch.dat+1)    # CHECK MAX(PATCH.DAT) TO SEE IF YOU NEED TO LOG TRANSFORM
 
 Expr.dat<-Expr.dat[rownames(patch.dat),colnames(Expr.dat)]  # Indexing by names - why not just ,] ?
 platformGn = abs(rowMeans(Expr.dat)-rowMeans(patch.dat))>=3
@@ -131,6 +132,17 @@ annoBG_all_PS<-patch_anno
 annoBG_all_PS$Prep = NA
 annoBG_all_PS$Prep[annoBG_all_PS$cell_specimen_project == "qIVSCC-METa"] = "acute"
 annoBG_all_PS$Prep[annoBG_all_PS$cell_specimen_project == "qIVSCC-METc"] = "cultured"
+
+link <- read_excel(file.path(mappingFolder, 'HMBA_BG_consensus_annotation.xlsx'), sheet = 'linking_table')
+link_vals <- link$level4_group
+keys <- link$previous_nomenclature
+names(link_vals) <- keys
+
+annoBG_all$Subclass_label = link_vals[annoBG_all$Subclass_label]
+annoBG_all_PS$Subclass_Corr_former = annoBG_all_PS$Subclass_Corr
+annoBG_all_PS$Subclass_Corr = link_vals[annoBG_all_PS$Subclass_Corr]
+annoBG_all_PS$Subclass_Tree_former = annoBG_all_PS$Subclass_Tree
+annoBG_all_PS$Subclass_Tree = link_vals[annoBG_all_PS$Subclass_Tree]
 
 ## Basic data and metadata set-up
 
@@ -206,7 +218,7 @@ brain.combined <- FindClusters(brain.combined, resolution = 1)
 xl <- range(brain.combined@reductions$umap@cell.embeddings[,1])
 yl <- range(brain.combined@reductions$umap@cell.embeddings[,2])
 
-mappingFolder<- file.path(mappingFolder,"Int_UMAP_373_STR")
+mappingFolder<- file.path(mappingFolder,"Int_UMAP_373_STR_Cons")
 dir.create(mappingFolder, showWarnings = FALSE)
 #dir.create(mappingFolder, showWarnings=FALSE)
 
@@ -268,7 +280,7 @@ dev.off()
 
 sc_names = sort(unique(brain.combined@meta.data$subclass))
 #colz <- brain.combined@meta.data$subclass_color_tree[match(sc_names, brain.combined@meta.data$subclass)]  
-colz <- DiscretePalette(n = length(unique(annoBG_all$Subclass_label)), palette = "polychrome")
+colz <- DiscretePalette(n = length(unique(annoBG_all$Subclass_label)), palette = "polychrome", shuffle=TRUE)
 #jpeg(file.path(mappingFolder,'204_359_integrated_umap4_dendGn_nolab2_sub.jpg'), width = 3500, height = 1500,
 #     pointsize = 12, quality = 100)
 png(file.path(mappingFolder,'204_373_integrated_umap4_dendGn_nolab2_sub.png'), width = 3100, height = 1500, pointsize = 12)

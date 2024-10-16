@@ -11,7 +11,8 @@ library(stringr)
 
 #START
 
-source("/home/xiaoping.liu/scrattch/mapping/run_mappings.R") # on cluster
+source("/home/xiaoping.liu/scrattch/mapping/run_mappings_noHANN.R") # on cluster
+source("/home/xiaoping.liu/scrattch/mapping/run_mappings.R") 
 
 # CrossAreal taxonomies
 
@@ -74,7 +75,7 @@ off_target = 'NN'
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116",
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116", 
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
-             data_fn = "20240909_RSC-204-373_macaque_patchseq_star2.7",
+             data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = NULL, 
              class_colname = 'Class_label',
@@ -88,7 +89,7 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/sh
 refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116" 
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116"  
 data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/" 
-data_fn = "20240909_RSC-204-373_macaque_patchseq_star2.7" 
+data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7" 
 mode = 'patchseq'                                                                                  
 h5ad_fn = NULL  
 class_colname = 'Class_label' 
@@ -120,7 +121,7 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/sh
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/GreatApes_Macaque_NCBI",
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/GreatApes_Macaque_NCBI", 
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
-             data_fn = "20240425_RSC-204-361_macaque_patchseq_star2.7",
+             data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = 'GreatApes_Macaque_NCBI.h5ad', 
              class_colname = 'class_label',
@@ -383,17 +384,24 @@ for (c in type_counts_Corr$Var1) {      # TEMPORARILY SET TO CORR
   #print(colorkey$colz[colorkey['subclass']==c])
 }
 
-png(file.path(mappingFolder,'NHP_BG_AIT116_sampling_counts.png'), width = 2000, height = 1200)
+#Optional translate names
+link <- read.csv(file.path(mappingFolder, "Linking_table.csv"))
+type_counts_Corr$Var2 <- link$level4_group[match(type_counts_Corr$Var1, link$previous_nomenclature)]
+main_subclasses_cons <- link$level4_group[match(main_subclasses, link$previous_nomenclature)]
+type_counts_Corr$Var2 <- ordered(type_counts_Corr$Var2, levels = main_subclasses_cons)
+  
+png(file.path(mappingFolder,'NHP_BG_AIT116_sampling_counts.png'), width = 1700, height = 1200)
 tmp <- par("mar")
 tmp[1] = tmp[1]+7
 par(mar = tmp)
 #barplot(names = type_counts_Tree$Var1, height = type_counts_Tree$Freq, las=2, col=type_counts_Tree$color)
-ggplot(type_counts_Corr,aes(x = Var1, y = Freq)) +                     # TEMPORARILY SET TO CORR
+ggplot(type_counts_Corr,aes(x = Var2, y = Freq)) +                     # TEMPORARILY SET TO CORR
        geom_bar(stat= 'Identity', fill = type_counts_Corr$color, alpha = 0.75) +
        #scale_fill_manual(values=type_counts_Tree$color) +
        xlab("") +
        ylab("Count") +
-       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=40),
+#       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=40),
+             theme(axis.text.x = element_text(angle = 55, vjust = 0.99, hjust=1, size=40),
              axis.text.y = element_text(size=40),
              axis.title=element_text(size=40, margin = margin(t = 0, r = 20, b = 0, l = 0)),
              #axis.line = element_line(size=1.5, color = 'midnightblue'),
@@ -409,7 +417,7 @@ roi_counts = data.frame(table(y))
 roi_counts = roi_counts[order(-roi_counts$Freq),]
 roi_counts$y = factor(roi_counts$y, levels = roi_counts$y)
 
-png(file.path(mappingFolder,'NHP_BG_AIT116_roi_counts.png'), width = 400, height = 500)
+png(file.path(mappingFolder,'NHP_BG_AIT116_roi_counts.png'), width = 350, height = 400)
 tmp <- par("mar")
 tmp[1] = tmp[1]+7
 par(mar = tmp)
@@ -417,7 +425,8 @@ ggplot(roi_counts, aes(x = y, y = Freq, fill = y)) +                     # TEMPO
   geom_bar(stat= 'Identity', alpha = 0.75) +
   xlab("") +
   ylab("Count") + guides(fill="none") +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=24),
+  #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=24),
+  theme(axis.text.x = element_text(angle = 55, vjust = 0.99, hjust=1, size=28),
         axis.text.y = element_text(size=24),
         axis.title=element_text(size=24, margin = margin(t = 0, r = 20, b = 0, l = 0)),
         panel.background = element_blank())
