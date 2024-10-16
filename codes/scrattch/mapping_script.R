@@ -71,10 +71,40 @@ proj_strs = "qIVSCC-MET"
 roi_strs = "STR"
 off_target = 'NN'
 
+
+run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HMBA/Aim1_Regional_Taxonomies/BasalGanglia/Macaque/", 
+             mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_117",  
+             data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
+             data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7",
+             mode = 'patchseq',
+             h5ad_fn = "HMBA_Macaque_BG_082024_AIT.h5ad",
+             class_colname = 'Class_label',
+             neigh_colname = 'Neighborhood_label',
+             subclass_colname = 'Subclass_label', 
+             cluster_colname = 'Cluster_label', 
+             proj_strs = "qIVSCC-MET",
+             roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L",
+             off_target = "NN"
+)
+refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HMBA/Aim1_Regional_Taxonomies/BasalGanglia/Macaque/" 
+mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_117"  
+data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/" 
+data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7" 
+mode = 'patchseq'                                                                                  
+h5ad_fn = "HMBA_Macaque_BG_082024_AIT.h5ad"
+class_colname = 'Class_label' 
+neigh_colname = 'Neighborhood_label' 
+subclass_colname = 'Subclass_label'  
+cluster_colname = 'Cluster_label'  
+proj_strs = "qIVSCC-MET" 
+roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L"
+off_target = "NN"
+
+
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116",
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116", 
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
-             data_fn = "20240805_RSC-204-370_macaque_patchseq_star2.7",
+             data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = NULL, 
              class_colname = 'Class_label',
@@ -88,7 +118,7 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/sh
 refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116" 
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116"  
 data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/" 
-data_fn = "20240805_RSC-204-370_macaque_patchseq_star2.7" 
+data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7" 
 mode = 'patchseq'                                                                                  
 h5ad_fn = NULL  
 class_colname = 'Class_label' 
