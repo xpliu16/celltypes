@@ -2,21 +2,37 @@ cd /local1/snakemake_ephys/snakemake_ephys/
 
 conda activate snakemake_env
 
+export LIMS_DBNAME="lims2"
 export LIMS_USER="limsreader" 
 export LIMS_HOST="limsdb2"
 export LIMS_PASSWORD="limsro"
-export LIMS_PASSWORD="limsro"
+export LIMS_PORT=5432
 
 
+rm -r testing/*
+or
 rm -r output
 rm ephys_features_array.feather
 rm ephys_features.csv
 
 snakemake -c1 --configfile config/XPL_default.yaml
 snakemake -c1 --configfile config/XPL_collabfiles.yaml
+snakemake -c1 --configfile config/XPL_default_testing.yaml
 
 
 Custom reports:
 'qIVSCC-METc', 'qIVSCC-METa'
 
-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
+>>> import pandas as pd
+>>> df = pd.read_feather('/local1/snakemake_ephys/snakemake_ephys/ephys_features_array.feather')
+>>> df
+
+#tried installing ipfx with pip install -e /local1/ipfx so should be a symbolic link within /local1/anaconda3/envs/snakemake_env/lib/python3.8/site-packages
+# But failed to build wheel
+# sudo dnf install python3-devel
+# conda install conda-forge::setuptools 
+# conda install "setuptools<65"
+# conda install conda-forge::gcc      
+
+# Give up for now - you need to manually sync the site-packages and the repo /local1/ipfx
+# Snakemake and VSCode debugging don't play together well - for now, just use pdb and print
