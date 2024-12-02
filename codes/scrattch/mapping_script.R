@@ -8,6 +8,10 @@ options(future.rng.onMisuse="ignore")
 library(scrattch.mapping)
 library (dplyr)
 library(stringr)
+#library(scrattch.patchseq)
+library(reticulate)
+#cell_type_mapper <- import("cell_type_mapper")
+#reticulate::use_python("/usr/bin/python3")
 
 #START
 
@@ -76,13 +80,14 @@ off_target = 'NN'
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HMBA/Aim1_Regional_Taxonomies/BasalGanglia/Macaque/", 
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_117",  
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
-             data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7",
+             data_fn = "20241024_RSC-204-377_macaque_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = "HMBA_Macaque_BG_082024_AIT.h5ad",
-             class_colname = 'Class_label',
-             neigh_colname = 'Neighborhood_label',
-             subclass_colname = 'Subclass_label', 
-             cluster_colname = 'Cluster_label', 
+             class_colname = 'Neighborhood_label', 
+             neigh_colname = 'Class_label', 
+             subclass_colname = 'Subclass_label',  
+             cluster_colname = 'Group_label',      # HACK because hierarchy is different, to match mouse whole brain
+             low_level = 'Group_label',
              proj_strs = "qIVSCC-MET",
              roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L",
              off_target = "NN"
@@ -90,28 +95,30 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HM
 refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HMBA/Aim1_Regional_Taxonomies/BasalGanglia/Macaque/" 
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_117"  
 data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/" 
-data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7" 
+data_fn = "20241024_RSC-204-377_macaque_patchseq_star2.7" 
 mode = 'patchseq'                                                                                  
 h5ad_fn = "HMBA_Macaque_BG_082024_AIT.h5ad"
 class_colname = 'Class_label' 
 neigh_colname = 'Neighborhood_label' 
 subclass_colname = 'Subclass_label'  
-cluster_colname = 'Cluster_label'  
+low_level = 'Group_label'
+cluster_colname = 'Group_label'      # HACK because hierarchy is different, to match mouse whole brain
 proj_strs = "qIVSCC-MET" 
 roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L"
-off_target = "NN"
+off_target = c("Immune", "Astro-Epen", "Vascular", "OPC-Oligo")
 
 
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116",
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116", 
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
-             data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7",
+             data_fn = "20241024_RSC-204-377_macaque_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = NULL, 
              class_colname = 'Class_label',
              neigh_colname = 'Neighborhood_label',
              subclass_colname = 'Subclass_label', 
              cluster_colname = 'Cluster_label', 
+             low_level = 'Subclass_label',
              proj_strs = "qIVSCC-MET",
              roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L",
              off_target = "NN"
@@ -119,13 +126,14 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/sh
 refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116" 
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116"  
 data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/" 
-data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7" 
+data_fn = "20241024_RSC-204-377_macaque_patchseq_star2.7" 
 mode = 'patchseq'                                                                                  
 h5ad_fn = NULL  
 class_colname = 'Class_label' 
 neigh_colname = 'Neighborhood_label' 
 subclass_colname = 'Subclass_label'  
-cluster_colname = 'Cluster_label'  
+cluster_colname = 'Cluster_label'
+low_level = 'Subclass_label'
 proj_strs = "qIVSCC-MET" 
 roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L"
 off_target = "NN"
@@ -151,7 +159,7 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/sh
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/GreatApes_Macaque_NCBI",
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/GreatApes_Macaque_NCBI", 
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
-             data_fn = "20240930_RSC-204-375_macaque_patchseq_star2.7",
+             data_fn = "20241024_RSC-204-377_macaque_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = 'GreatApes_Macaque_NCBI.h5ad', 
              class_colname = 'class_label',

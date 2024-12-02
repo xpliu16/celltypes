@@ -8,7 +8,8 @@ options(future.rng.onMisuse="ignore")
 library(scrattch.mapping)
 library (dplyr)
 library(stringr)
-
+library(reticulate)
+cell_type_mapper <- import("cell_type_mapper")
 
 run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode, 
                          h5ad_fn = NULL, class_colname, neigh_colname, 
@@ -65,7 +66,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   #load(AIT.anndata$uns$dend)
   #dend = reference$dend
   #dend <- readRDS(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]])
-  dend <- json_to_dend(fromJSON(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]]))
+  dend <- json_to_dend(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]])
   #dend <- readRDS(file.path(refFolder, mode, "dend.RData"))  # Or whatever mode is
   
   #dend_file = paste0(refFolder,'/dend.RData')
@@ -86,7 +87,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
                                         corr.map   = TRUE, # Flags for which mapping algorithms to run
                                         tree.map   = TRUE, 
                                         seurat.map = FALSE, 
-                                        label.cols = c(class_colname, neigh_colname, subclass_colname, cluster_colname)
+                                        label.cols = c(neigh_colname, class_colname, subclass_colname, cluster_colname)
   )
   a <- strsplit(refFolder,'/')[[1]]
   taxname <- a[length(a)]

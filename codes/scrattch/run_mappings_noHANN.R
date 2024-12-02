@@ -8,11 +8,13 @@ options(future.rng.onMisuse="ignore")
 library(scrattch.mapping)
 library (dplyr)
 library(stringr)
+library(reticulate)
+cell_type_mapper <- import("cell_type_mapper")
 
 
 run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode, 
                          h5ad_fn = NULL, class_colname, neigh_colname, 
-                         subclass_colname, cluster_colname, proj_strs, roi_strs, 
+                         subclass_colname, cluster_colname, low_level, proj_strs, roi_strs, 
                          off_target) {
   # This remakes taxonomy from feather files and reloads, very slow, use read_h5ad instead for the time being
   if (is.null(h5ad_fn)) {
@@ -31,7 +33,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
     AIT.anndata = buildPatchseqTaxonomy(AIT.anndata,
                                         mode.name = mode, ## Give a name to off.target filterd taxonomy
                                         subsample = 100, ## Subsampling is only for PatchseqQC contamination calculation
-                                        subclass.column = subclass_colname, ## Typically this is `subclass_label` but tasic2016 has no subclass annotation.
+                                        subclass.column = low_level, ## Used for subsampling - use lowest level above cluster
                                         class.column = class_colname, ## The column by which off-target types are determined
                                         off.target.types = off_target, ## The off-target class.column labels for patchseqQC
                                         num.markers = 50, ## Number of markers for each annotation in `class_label`
@@ -65,7 +67,8 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   #load(AIT.anndata$uns$dend)
   #dend = reference$dend
   #dend <- readRDS(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]])
-  dend <- json_to_dend(fromJSON(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]]))
+  #dend <- json_to_dend(fromJSON(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]]))
+  dend <- json_to_dend(AIT.anndata$uns$dend[[AIT.anndata$uns$mode]])
   #dend <- readRDS(file.path(refFolder, mode, "dend.RData"))  # Or whatever mode is
   
   #dend_file = paste0(refFolder,'/dend.RData')
@@ -85,9 +88,9 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
                                         query.data = query.data, 
                                         corr.map   = TRUE, # Flags for which mapping algorithms to run
                                         tree.map   = TRUE, 
-                                        #hierarchical.map=TRUE,
+                                        hierarchical.map=FALSE,
                                         seurat.map = FALSE, 
-                                        label.cols = c(class_colname, neigh_colname, subclass_colname, cluster_colname)
+                                        label.cols = c(neigh_colname, class_colname, subclass_colname, cluster_colname)
   )
   a <- strsplit(refFolder,'/')[[1]]
   taxname <- a[length(a)]
@@ -95,7 +98,8 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   dataname <- b[2]
   
   save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping.Rdata', sep='_')))
-  query.mapping = getMappingResults(query.mapping_obj)
+  #query.mapping = getMappingResults(query.mapping_obj)
+  query.mapping<-query.mapping_obj@annotations   # Temporary solution
   write.csv(query.mapping, file.path(mappingFolder, paste(taxname, dataname, 'mapping.csv', sep='_')), row.names=FALSE)
   
   # Variable renaming
@@ -116,8 +120,10 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   rownames(annotations_mapped) <- annotations_mapped$exp_component_name
   #type_counts_Corr = table(annotations_mapped$supertype_Corr)
   #type_counts_Tree = table(annotations_mapped$supertype_Tree)
-  type_counts_Corr = table(annotations_mapped$level3.subclass_Corr)
-  type_counts_Tree = table(annotations_mapped$level3.subclass_Tree)
+  #type_counts_Corr = table(annotations_mapped$level3.subclass_Corr)
+  #type_counts_Tree = table(annotations_mapped$level3.subclass_Tree)
+  type_counts_Corr = table(annotations_mapped[paste0(gsub('_label', '', low_level), '_Corr')])
+  type_counts_Tree = table(annotations_mapped[paste0(gsub('_label', '', low_level), '_Tree')])
 
   write.csv(annotations_mapped, file=file.path(mappingFolder, paste(taxname, dataname, 'ann_map_full.csv', sep='_')), row.names=FALSE)
   save(annotations_mapped, type_counts_Corr, type_counts_Tree, file=file.path(mappingFolder,paste(taxname, dataname, 'ann_map_full.Rdata', sep='_')))
