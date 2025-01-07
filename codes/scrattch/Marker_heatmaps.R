@@ -11,6 +11,8 @@ library(rjson)
 
 refFolder <- "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116"
 mappingFolder <- "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_116/"
+#refFolder <- "/allen/programs/celltypes/workgroups/rnaseqanalysis/HMBA/Aim1_Regional_Taxonomies/BasalGanglia/Macaque/" 
+#mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_117"  
 data_dir = "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object"
 
 library(scrattch.mapping)
@@ -22,7 +24,7 @@ AIT.anndata <- loadTaxonomy(refFolder)
 #X <-matrix(rpois(100,10),ncol=10)
 #colnames(X) = c("A","B","C","D","E","F","G","H","I","J")
 #load(file.path(mappingFolder,"NHP_BG_204_329_AIT115ann_map2.Rdata"))
-vars <- load(file.path(mappingFolder,"NHP_BG_AIT_116_RSC-204-373_sub_QC.Rdata"))
+vars <- load(file.path(mappingFolder,"NHP_BG_AIT_116_RSC-204-378_sub_QC.Rdata"))
 HANN_obj <- fromJSON(file.path(mappingFolder, "20240520_RSC-204-363_neurons_results.json"))
 HANN_res <- do.call(cbind, HANN_obj$results)
 orig_query <- read_h5ad(file.path(mappingFolder, '20240520_RSC-204-363_query.h5ad'))
@@ -31,37 +33,58 @@ HANN_res <- cbind(HANN_cell_names, HANN_res)
 rownames(HANN_res) = HANN_cell_names
 HANN_res_sub <- HANN_res[rownames(annoNew_sub),]
 
-#anno_conf = anno_mapped_sub[anno_mapped_sub$Subclass_Corr =='D1-Matrix' &
+#anno_conf = anno_mapped_sub[anno_mapped_sub$Subclass_Corr =='D1-Matrix' &sample.int
 #                              anno_mapped_sub$Subclass_Tree == 'D2-Matrix',]
 #anno_conf$source = "D1/D2 conf samples"
 #anno_patchseq = anno_conf
 
-annoC <- annoNew_sub[annoNew_sub$Subclass_Corr =='SST_Chodl',]
-annoC$source = "Patchseq Subclass_Corr SST_Chodl"
-annoT <- annoNew_sub[annoNew_sub$Subclass_Tree == 'SST_Chodl',]
-annoT$source = "Patchseq Subclass_Tree SST_Chodl"
+#annoC <- annoNew_sub[annoNew_sub$Subclass_Corr =='SST_Chodl',]
+#annoC$source = "Patchseq Subclass_Corr SST_Chodl"
+#annoT <- annoNew_sub[annoNew_sub$Subclass_Tree == 'SST_Chodl',]
+#annoT$source = "Patchseq Subclass_Tree SST_Chodl"
+annoCnotT <- annoNew_sub[(annoNew_sub$Subclass_Corr =='SST_Chodl') & (annoNew_sub$Subclass_Tree != 'SST_Chodl'),]
+annoCnotT$source = "Patchseq Corr not Tree SST_Chodl"
+#annoTnotC <- annoNew_sub[(annoNew_sub$Subclass_Corr !='SST_Chodl') & (annoNew_sub$Subclass_Tree == 'SST_Chodl'),]
+#annoTnotC$source = "Patchseq Tree not Corr SST_Chodl"
+anno5050 <- annoNew_roi[(annoNew_roi$Virus == 'CN5050') & (annoNew_roi$creCell == 'Positive'),]
+anno5050 <- anno5050[!is.na(anno5050$exp_component_name),]
+anno5050$source <- "Patchseq Subclass_Corr CN5050"
+
+#annoNUDAP <- annoNew_roi[annoNew_roi$Subclass_Corr == 'D1-NUDAP',]
+#annoNUDAP$source <- "Patchseq Subclass_Corr D1-NUDAP"
+#annoICjC <- annoNew_roi[annoNew_roi$Subclass_Corr == 'D1-ICj',]
+#annoICjC$source <- "Patchseq Subclass_Corr D1-ICj"
+#annoICjT <- annoNew_roi[annoNew_roi$Subclass_Tree == 'D1-ICj',]
+#annoICjT$source <- "Patchseq Subclass_Tree D1-ICj"
+#anno4609 <- annoNew_roi[(annoNew_roi$Virus == 'CN4609') & (annoNew_roi$creCell == 'Positive'),]
+#anno4609 <- anno4609[!is.na(anno4609$exp_component_name),]
+#anno4609$source <- "Patchseq Subclass_Corr CN4609"
+
 #annoH <- HANN_res_sub[HANN_res_sub$level3.subclass.assignment == "D1-Striosome",]
 #annoH$source = "Patchseq Subclass_HANN D1-Striosome"
 #annoH$exp_component_name = rownames(annoH)
 #anno_patchseq = rbind(annoC[c('exp_component_name','source')],annoT[c('exp_component_name','source')],annoH[c('exp_component_name','source')])
-anno_patchseq = rbind(annoC[c('exp_component_name','source')],annoT[c('exp_component_name','source')])
-
+#anno_patchseq = rbind(annoC[c('exp_component_name','source')],annoT[c('exp_component_name','source')])
+#anno_patchseq = rbind(annoNUDAP[c('exp_component_name','source')],annoICjC[c('exp_component_name','source')], annoICjT[c('exp_component_name','source')],anno4609[c('exp_component_name','source')])
+anno_patchseq = rbind(annoCnotT[c('exp_component_name','source')],anno5050[c('exp_component_name','source')])
+                      
 #rownames(anno_conf)
-load(paste0(data_dir, "/20240909_RSC-204-373_macaque_patchseq_star2.7_cpm.Rdata"))
-load(paste0(data_dir, "/20240909_RSC-204-373_macaque_patchseq_star2.7_samp.dat.Rdata"))
+load(paste0(data_dir, "/202411107_RSC-204-378_macaque_patchseq_star2.7_cpm.Rdata"))
+load(paste0(data_dir, "/202411107_RSC-204-378_macaque_patchseq_star2.7_samp.dat.Rdata"))
 
 #gene_list = c("DRD1", "DRD2", "TAC1", "PENK", "TAC3", "RXFP1", "CPNE4", "STXBP6", "KCNIP1")
 #gene_list = c('ATP2B4', 'MEIS2', 'C8H8orf34', 'ARPP21', 'PCDH15', 'ZNF804A', 'GRM7', 'TMTC1', 'NKAIN2', 'DSCAM') # For MEIS2
 #gene_list = c('TAC1', 'RELN', 'CNR1', 'FOXP2', 'TOX', 'KCNIP1', 'SORCS1', 'BACH2', 'DGKB', 'ERBB4', 'DRD2', 'CHRM3', 'GRIK3', 'NPAS3', 'FGF14', 'HS6ST3', 'GRIK2', 'NRG3')     # For Striosome from NSForest
 #gene_list = c('DRD1', 'DRD2', 'KCNIP1', 'STXBP6', 'BACH2', 'FAM163A')    # For striosome from He et al.
-gene_list = c('SST', 'NPY', 'NOS1', 'CHODL', 'TACR1', 'SCN9A', 'KCNQ5')
+gene_list = c('SST', 'NPY', 'NOS1', 'CHODL', 'TACR1', 'SCN9A', 'KCNQ5', 'DRD1', 'MEIS2')   # For Chodl
+#gene_list = c('CPNE4', 'PPP1R1B', 'B3GAT2', 'RXFP1', 'DRD1', 'DRD2', 'DRD3', 'KCNT2', 'NTN1', 'SLC17A6')    # For NUDAP, Hybrid, Shell, ICj
 
 #subclass_list = c("D1-Matrix", "D2-Matrix", "D1D2-Hybrid")  
 #subclass_list = c("MEIS2", "D1-NUDAP", "D1-ShellOT")  
-
-subclass_list = c("SST_Chodl", "D1-ShellOT", "D2-ShellOT")  
+subclass_list = c("D1-ShellOT", "D2-ShellOT", "MEIS2", "SST_Chodl")  
+#subclass_list = c("D1-ICj", "D1-NUDAP", "SLC17A6", "SN_STH", "SN_STH_GPe-MEIS2-OTX2")  
 n_subsamples = 35
-fig_file = file.path(mappingFolder,'204_373_SST_Chodl_corr_tree_heatmap.jpg')
+fig_file = file.path(mappingFolder,'204_378_SST_Chodl_heatmap.jpg')
 
 make_heatmap <- function(samp.dat, cpmR, anno_patchseq, gene_list, AIT.anndata, subclass_list, n_subsamples, fig_file){
   query.metadata <- samp.dat
