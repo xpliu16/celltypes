@@ -2,9 +2,11 @@ ssh -o ServerAliveInterval=6000 xiaoping.liu@hpc-login.corp.alleninstitute.org
 
 srun -c 10 --mem=384G -t 10:00:00 -p celltypes --pty bash
 
+singularity shell --cleanenv docker://njjai/scrattch_mapping:0.7
+
 singularity shell --cleanenv docker://njjai/scrattch_mapping:0.6.3
 
-singularity shell --cleanenv docker://njjai/scrattch_mapping:0.52.2
+singularity shell --cleanenv docker://njjai/scrattch_mapping:0.52.2   # For AIT 11.6
 
 singularity shell --cleanenv docker://njjai/scrattch_mapping:0.41
 

@@ -80,28 +80,21 @@ off_target = 'NN'
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HMBA/Aim1_Regional_Taxonomies/BasalGanglia/Macaque/", 
              mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_117",  
              data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/",
-             data_fn = "20241024_RSC-204-377_macaque_patchseq_star2.7",
+             data_fn = "202411107_RSC-204-378_macaque_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = "HMBA_Macaque_BG_082024_AIT.h5ad",
-             class_colname = 'Neighborhood_label', 
-             neigh_colname = 'Class_label', 
-             subclass_colname = 'Subclass_label',  
-             cluster_colname = 'Group_label',      # HACK because hierarchy is different, to match mouse whole brain
-             low_level = 'Group_label',
+             hierarchy <- c("Neighborhood_label", "Class_label", "Subclass_label", "Group_label"),
              proj_strs = "qIVSCC-MET",
              roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L",
-             off_target = "NN"
+             off_target = c("Immune", "Astro-Epen", "Vascular", "OPC-Oligo")
 )
 refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HMBA/Aim1_Regional_Taxonomies/BasalGanglia/Macaque/" 
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_117"  
 data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/" 
-data_fn = "20241024_RSC-204-377_macaque_patchseq_star2.7" 
+data_fn = "202411107_RSC-204-378_macaque_patchseq_star2.7" 
 mode = 'patchseq'                                                                                  
 h5ad_fn = "HMBA_Macaque_BG_082024_AIT.h5ad"
-class_colname = 'Class_label' 
-neigh_colname = 'Neighborhood_label' 
-subclass_colname = 'Subclass_label'  
-low_level = 'Group_label'
+hierarchy <- c("Neighborhood_label", "Class_label", "Subclass_label", "Group_label") 
 cluster_colname = 'Group_label'      # HACK because hierarchy is different, to match mouse whole brain
 proj_strs = "qIVSCC-MET" 
 roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L"

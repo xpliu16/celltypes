@@ -47,7 +47,17 @@ run_mappings(refFolder = paste0("/allen/programs/celltypes/workgroups/rnaseqanal
 # For reloading data and exploratory work:
 refFolder = paste0("/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/CrossAreal_",region)
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/Human_Cortical"
-data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Human/patchseq/R_Object/"
+data_dir =  "/allen/programs/celltypes/workgsuppressPackageStartupMessages({
+  library("scrattch.mapping")
+})
+options(stringsAsFactors = FALSE)
+options(future.globals.maxSize = 4000 * 1024^2)  # Can adjust this value if needed, depending on number of cells
+options(future.rng.onMisuse="ignore")
+
+library(scrattch.mapping)
+library (dplyr)
+library(stringr)
+roups/rnaseqanalysis/SMARTer/STAR/Human/patchseq/R_Object/"
 mode = paste0("CrossAreal_",region,"_patchseq")
 h5ad_fn = paste0("CrossAreal_",region,".h5ad")
 class_colname = "Class_label"
@@ -181,8 +191,7 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/sh
 
 
 run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode, 
-                         h5ad_fn = NULL, class_colname, neigh_colname, 
-                         subclass_colname, cluster_colname, proj_strs, roi_strs,
+                         h5ad_fn = NULL, hierarchy, proj_strs, roi_strs,
                          off_target) {
     # This remakes taxonomy from feather files and reloads, very slow, use read_h5ad instead for the time being
     if (is.null(h5ad_fn)) {

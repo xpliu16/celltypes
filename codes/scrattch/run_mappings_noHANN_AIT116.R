@@ -49,7 +49,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   } 
   
   query.metadata <- samp.dat
-  counts      <- cpmR   # Genes are rows, samples are columns
+  counts      <- cpmR   # Genes are rows, samplesingularity shell --cleanenv docker://njjai/scrattch_mapping:0.52.2s are columns
   
   query.counts   <- counts
   query.data   <- logCPM(query.counts)
@@ -71,12 +71,20 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   #dend_file = paste0(refFolder,'/dend.RData')
   #dend <- readRDS(dend_file)
   allMarkers = unique(unlist(get_dend_markers(dend)))
+
+  # Filter out "trouble" genes
+  excl1 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/sex_genes.txt")
+  excl2 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/mito_genes.txt")
+  excl3 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/activity_genes.txt")
+  excl4 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/is_immune_pvalb.txt")
+  foo<-unique(unlist(unlist(list(excl1, excl2, excl3, excl4))))
+  allMarkers = setdiff(allMarkers, foo)     # 1382 to 1313
   
   ## Alternative get genes from MERFISH panel
   #panel_df = read.csv(file.path(panelFolder, "AIT_115_MERFISH_panel.xlsx"))
   
   ## Subset query data to just those markers
-  query.data = query.data[intersect(rownames(query.data), allMarkers),]
+  query.data = query.data[intersect(rownames(query.data), allMarkers),]    #1302
   
   ## Identify the offtarget cell types manually.
   print(unique(AIT.anndata$obs[class_colname]))
@@ -84,7 +92,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   query.mapping_obj <- taxonomy_mapping(AIT.anndata= AIT.anndata,
                                         query.data = query.data, 
                                         corr.map   = TRUE, # Flags for which mapping algorithms to run
-                                        tree.map   = TRUE, 
+                                        tree.map   = FALSE, 
                                         #hierarchical.map=TRUE,
                                         seurat.map = FALSE, 
                                         label.cols = c(class_colname, neigh_colname, subclass_colname, cluster_colname)
@@ -94,9 +102,9 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   b <- strsplit(data_fn, '_')[[1]]
   dataname <- b[2]
   
-  save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping.Rdata', sep='_')))
+  save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping_gene_exclude.Rdata', sep='_')))
   query.mapping = getMappingResults(query.mapping_obj)
-  write.csv(query.mapping, file.path(mappingFolder, paste(taxname, dataname, 'mapping.csv', sep='_')), row.names=FALSE)
+  write.csv(query.mapping, file.path(mappingFolder, paste(taxname, dataname, 'mapping_gene_exclude.csv', sep='_')), row.names=FALSE)
   
   # Variable renaming
   #clusters  <- unique(query.mapping$cluster)   

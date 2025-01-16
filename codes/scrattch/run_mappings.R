@@ -12,8 +12,7 @@ library(reticulate)
 cell_type_mapper <- import("cell_type_mapper")
 
 run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode, 
-                         h5ad_fn = NULL, class_colname, neigh_colname, 
-                         subclass_colname, cluster_colname, proj_strs, roi_strs, 
+                         h5ad_fn = NULL, hierarchy, proj_strs, roi_strs, 
                          off_target) {
   # This remakes taxonomy from feather files and reloads, very slow, use read_h5ad instead for the time being
   if (is.null(h5ad_fn)) {
@@ -26,7 +25,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
     AIT.anndata = mappingMode(AIT.anndata, mode=mode)
   }, error = function(err) {
     ## Add in the off.target annotation.
-    AIT.anndata$obs['off_target'] = AIT.anndata$obs[class_colname]
+    AIT.anndata$obs['off_target'] = AIT.anndata$obs[hierarchy[2]]
     
     # Setup the taxonomy for patchseqQC to infer off.target contamination
     AIT.anndata = buildPatchseqTaxonomy(AIT.anndata,
