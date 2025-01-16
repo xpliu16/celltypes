@@ -36,7 +36,7 @@ subclass = c("D1-Matrix", "D2-Striosome", "D2-Matrix", "D2-Hybrid-MCHR2",
              "D1D2-Hybrid", "LHX6-TAC3-PLPP4", "D1-Striosome",
              "PVALB-COL19A1-ST18", "CCK-VIP-TAC3", "CCK-FBXL7",
              "SST_Chodl", "D2-ShellOT", "CHAT", "D1-ShellOT",
-             "D1-NUDAP", "TAC3-LHX8-PLPP4", "D1-ICj")   
+             "D1-NUDAP", "TAC3-LHX8-PLPP4", "D1-ICj", "MEIS2", "SN_STH_GPe-MEIS2-OTX2", "SLC17A6")   
 
 kpsubclass<-is.element(annoBG$Subclass_label,subclass)
 annoBG<-annoBG[kpsubclass,]
@@ -53,7 +53,7 @@ colz <- annoBG$Subclass_color[match(subclass, annoBG$Subclass_label)]
 #load(file.path(mappingFolder,"NHP_BG_204_337_AIT115_ann_map_QC.Rdata"))
 #annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_204_346_AIT115_ann_map_roi_QCpass.csv"))
 #annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_AIT_116_RSC-204-370_sub_QC.csv"))
-annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_AIT_116_RSC-204-373_sub_QC.csv"))
+annoNew <- read.csv(file.path(mappingFolder, "NHP_BG_AIT_116_RSC-204-378_roi_QC.csv"))
 
 HANN_obj <- fromJSON(file.path(mappingFolder, "20240621_RSC-204-366_neurons_results.json"))
 HANN_res <- do.call(cbind, HANN_obj$results)
@@ -66,7 +66,7 @@ HANN_res_sub <- HANN_res[annoNew$exp_component_name,]
 patch_anno <- annoNew
 #patch_anno <- merge(annoNew, HANN_res_sub, by.x='exp_component_name', by.y= 'row.names') 
 #patch.dat<- read_feather(paste(patchseqFolder, "data.feather", sep =""))
-load(paste0(data_dir, "/20240909_RSC-204-373_macaque_patchseq_star2.7_cpm.Rdata"))
+load(paste0(data_dir, "/202411107_RSC-204-378_macaque_patchseq_star2.7_cpm.Rdata"))
 patch.dat <- logCPM(cpmR) 
 
 #patch_anno<- patch_anno[match(patch.dat$sample_id,patch_anno$sample_id),]
@@ -162,7 +162,11 @@ brain.metadata <- data.frame(set=c(rep("Taxonomy",dim(dataBG_all)[2]),rep("Patch
                              area =c(rep("BG",dim(dataBG_all)[2]),annoBG_all_PS$Region),
                              subclass_tree =c(annoBG_all$Subclass_label,annoBG_all_PS$Subclass_Tree),
                              subclass_color_tree = c(annoBG_all$Subclass_color, annoBG_all$Subclass_color[match(annoBG_all_PS$Subclass_Tree, annoBG_all$Subclass_label)]),
-                             prep = c(rep("acute",dim(dataBG_all)[2]),annoBG_all_PS$Prep))
+                             prep = c(rep("acute",dim(dataBG_all)[2]),annoBG_all_PS$Prep),
+                             virus = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$Virus),
+                             virus4609 = c(rep("none",dim(dataBG_all)[2]), (annoBG_all_PS$Virus=="CN4609") & (annoBG_all_PS$creCell=="Positive")),
+                             virus5050 = c(rep("none",dim(dataBG_all)[2]), (annoBG_all_PS$Virus=="CN5050") & (annoBG_all_PS$creCell=="Positive")),                             
+                             creCell = c(rep("none",dim(dataBG_all)[2]), annoBG_all_PS$creCell))
 rownames(brain.metadata) <- colnames(brain.data)
 
 ## Construct data set lists
@@ -218,11 +222,11 @@ brain.combined <- FindClusters(brain.combined, resolution = 1)
 xl <- range(brain.combined@reductions$umap@cell.embeddings[,1])
 yl <- range(brain.combined@reductions$umap@cell.embeddings[,2])
 
-mappingFolder<- file.path(mappingFolder,"Int_UMAP_373_STR_Cons")
+mappingFolder<- file.path(mappingFolder,"Int_UMAP_378_STR_roi")
 dir.create(mappingFolder, showWarnings = FALSE)
 #dir.create(mappingFolder, showWarnings=FALSE)
 
-jpeg(file.path(mappingFolder,'204_373_integrated_umap_dendGn_sub_180neigh.jpg'), width = 2000, height = 1200, quality = 100)
+jpeg(file.path(mappingFolder,'204_378_integrated_umap_dendGn_sub_180neigh.jpg'), width = 2000, height = 1200, quality = 100)
 
 DimPlot(brain.combined, reduction = "umap", split.by = "set",pt.size = 1)
 umap = as.matrix(brain.combined@reductions[["umap"]]@cell.embeddings)
@@ -238,7 +242,7 @@ dev.off()
 # For all subclasses
 #jpeg(file.path(mappingFolder,'204_337_integrated_umap2_dendGn.jpg'), width = 2500, height = 1600, quality = 100)
 # For STR subclasses only
-jpeg(file.path(mappingFolder,'204_373_integrated_umap2_dendGn_sub.jpg'), width = 2000, height = 1600, quality = 100)
+jpeg(file.path(mappingFolder,'204_378_integrated_umap2_dendGn_sub.jpg'), width = 2000, height = 1600, quality = 100)
 
 p1 <- DimPlot(brain.combined, reduction = "umap", group.by = "set", label.size = 1, pt.size = 1, cols = c("red", "grey"), raster = F)+xlim(xl) + ylim(yl)
 p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5, raster=F)+ggtitle("FACS")+xlim(xl) + ylim(yl) +guides(color = guide_legend(override.aes = list(size=4), ncol=1))
@@ -259,7 +263,7 @@ dev.off()
 #unique(brain.combined$subclass[brain.combined$set=="PatchSeq"])
 #cols = c('V0' = 'red', 'V6' = 'grey', 'V8' = 'grey')
 
-jpeg(file.path(mappingFolder,'204_373_integrated_umap3_dendGn_sub.jpg'), width = 2400, height = 1200,
+jpeg(file.path(mappingFolder,'204_378_integrated_umap3_dendGn_sub.jpg'), width = 2400, height = 1200,
      pointsize = 12, quality = 100)
 plot_grid(p1,p2)
 p1+p2    # WHAT DOES THIS DO?
@@ -268,7 +272,7 @@ dev.off()
 #install.packages("pals")
 #library(pals)
 colz <- DiscretePalette(n = length(unique(annoBG_all$Subclass_label)), palette = "polychrome")
-jpeg(file.path(mappingFolder,'204_373_integrated_umap4_dendGn_lab_repel_sub.jpg'), width = 2600, height = 1200,
+jpeg(file.path(mappingFolder,'204_378_integrated_umap4_dendGn_lab_repel_sub.jpg'), width = 2600, height = 1200,
      pointsize = 12, quality = 100)
 p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = .5, cols=colz, label=T, repel=T, raster=F)+ggtitle("FACS")+xlim(xl) + ylim(yl)
 #LabelClusters(plot = p2, id = 'subclass')
@@ -283,7 +287,7 @@ sc_names = sort(unique(brain.combined@meta.data$subclass))
 colz <- DiscretePalette(n = length(unique(annoBG_all$Subclass_label)), palette = "polychrome", shuffle=TRUE)
 #jpeg(file.path(mappingFolder,'204_359_integrated_umap4_dendGn_nolab2_sub.jpg'), width = 3500, height = 1500,
 #     pointsize = 12, quality = 100)
-png(file.path(mappingFolder,'204_373_integrated_umap4_dendGn_nolab2_sub.png'), width = 3100, height = 1500, pointsize = 12)
+png(file.path(mappingFolder,'204_378_integrated_umap4_dendGn_nolab2_sub.png'), width = 3100, height = 1500, pointsize = 12)
 p2 <- DimPlot(brain.combined, reduction = "umap", group.by = "subclass", cells=colnames(dataBG_all),pt.size = 1, cols=colz, raster=F)+
   xlim(xl) + ylim(yl) +  guides(color = guide_legend(override.aes = list(size=4), ncol=1) ) 
 #LabelClusters(plot = p2, id = 'subclass')
@@ -313,7 +317,7 @@ cex.legend=1
 inds_ps = brain.metadata$set == "Patch-seq"
 inds_tx = brain.metadata$set == "Taxonomy"
 
-jpeg(file.path(mappingFolder,'204_373_integrated_umap_Corr_Tree_dendGn_sub.jpg'), width = 1500, height = 600,
+jpeg(file.path(mappingFolder,'204_378_integrated_umap_Corr_Tree_dendGn_sub.jpg'), width = 1500, height = 600,
      pointsize = 12, quality = 100)
 par(mfrow=c(1,3))
 plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
@@ -342,7 +346,7 @@ mtext(side=3, "Patchseq Cells (Tree)", cex=cex.main)
 
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_373_integrated_umap_QC_dendGn_sub.jpg'), width = 2400, height = 1600, quality = 100)
+jpeg(file.path(mappingFolder,'204_378_integrated_umap_QC_dendGn_sub.jpg'), width = 2400, height = 1600, quality = 100)
 p7 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC") + ggtitle("NMS > 0.4")
 #p8 <- DimPlot(brain.combined, reduction = "umap", cells=colnames(dataBG_all_PS), group.by = "QC2") + ggtitle("NMS stringent")
 p8 <- DimPlot(brain.combined, reduction = "umap",pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC5") + ggtitle("score.Corr > 0.55")
@@ -351,11 +355,66 @@ p9 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(da
 plot_grid(p1, p2, p6, p7, p8, p9, nrow=2)
 dev.off()
 
-jpeg(file.path(mappingFolder,'204_373_integrated_umap_QC2_dendGn_sub.jpg'), width = 2400, height = 1600, quality = 100)
+jpeg(file.path(mappingFolder,'204_378_integrated_umap_QC2_dendGn_sub.jpg'), width = 2400, height = 1600, quality = 100)
 p10 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC3") + ggtitle("Library_prep_pass_fail")
 p11 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC6") + ggtitle("Genes detected < 8000")
 p12 <- DimPlot(brain.combined, reduction = "umap", pt.size = 1, cells=colnames(dataBG_all_PS), group.by = "QC2") + ggtitle("NMS_stringent")
 plot_grid(p1, p2, p7, p10, p11, p12, nrow=2)
+dev.off()
+
+# By virus
+jpeg(file.path(mappingFolder,'204_378_integrated_umap_virus_roi.jpg'), width = 2400, height = 1000, quality = 100)
+p7 <- DimPlot(brain.combined, group.by = "virus",  reduction = "umap",
+              pt.size = 1.5, label=FALSE, label.size = 2,cells=colnames(dataBG_all_PS), raster=F)+ ggtitle("Prep")+xlim(xl) + ylim(yl)
+dev.off()
+
+jpeg(file.path(mappingFolder,'204_378_integrated_umap_virus4609_roi_b.jpg'), width = 2000, height = 1000, quality = 100)
+
+par(mfrow=c(1,2))
+plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
+rect(xl[1], yl[1], xl[2], yl[2], border="#aaaaaa", lwd=0.25) 
+points(umap1[inds_tx], umap2[inds_tx], col=brain.metadata$subclass_color[inds_tx], cex=cex, pch=pch)
+mtext(side=3, "BG Taxonomy", cex=cex.main)
+labels.u <- sort(unique(brain.metadata$subclass))
+legend.pos <- "topleft"
+legend.text <- as.character(labels.u)
+legend.colors <- brain.metadata$subclass_color[match(labels.u,brain.metadata$subclass)]
+legend(legend.pos, legend=legend.text, inset=0.03,
+       col=legend.colors,
+       bty="n", pch=pch, cex=cex.legend)
+
+plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
+rect(xl[1], yl[1], xl[2], yl[2], border="#aaaaaa", lwd=0.25) 
+points(umap1[inds_tx], umap2[inds_tx], col="grey84", cex=cex, pch=pch)
+points(umap1[inds_ps], umap2[inds_ps], col="cyan", cex=cex, pch=pch)
+inds_ps_virus = brain.metadata$virus4609 == TRUE
+points(umap1[inds_ps_virus], umap2[inds_ps_virus], col= "red", cex=cex, pch=pch)
+mtext(side=3, "Patchseq Cells (CN4609)", cex=cex.main)
+
+dev.off()
+
+jpeg(file.path(mappingFolder,'204_378_integrated_umap_virus5050_roi_b.jpg'), width = 2400, height = 1000, quality = 100)
+par(mfrow=c(1,2))
+plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
+rect(xl[1], yl[1], xl[2], yl[2], border="#aaaaaa", lwd=0.25) 
+points(umap1[inds_tx], umap2[inds_tx], col=brain.metadata$subclass_color[inds_tx], cex=cex, pch=pch)
+mtext(side=3, "BG Taxonomy", cex=cex.main)
+labels.u <- sort(unique(brain.metadata$subclass))
+legend.pos <- "topleft"
+legend.text <- as.character(labels.u)
+legend.colors <- brain.metadata$subclass_color[match(labels.u,brain.metadata$subclass)]
+legend(legend.pos, legend=legend.text, inset=0.03,
+       col=legend.colors,
+       bty="n", pch=pch, cex=cex.legend)
+
+plot(xl, yl, type="n", axes=F, frame=F, xlab="UMAP1", ylab="UMAP2")
+rect(xl[1], yl[1], xl[2], yl[2], border="#aaaaaa", lwd=0.25) 
+points(umap1[inds_tx], umap2[inds_tx], col="grey84", cex=cex, pch=pch)
+points(umap1[inds_ps], umap2[inds_ps], col="cyan", cex=cex, pch=pch)
+inds_ps_virus = brain.metadata$virus5050 == TRUE
+points(umap1[inds_ps_virus], umap2[inds_ps_virus], col= "red", cex=cex, pch=pch)
+mtext(side=3, "Patchseq Cells (CN5050)", cex=cex.main)
+
 dev.off()
 
 # High genes detected

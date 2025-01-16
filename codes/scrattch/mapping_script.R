@@ -6,6 +6,8 @@ options(future.globals.maxSize = 4000 * 1024^2)  # Can adjust this value if need
 options(future.rng.onMisuse="ignore")
 
 library(scrattch.mapping)
+library(scrattch.patchseq)
+library(scrattch.taxonomy)
 library (dplyr)
 library(stringr)
 #library(scrattch.patchseq)
@@ -84,9 +86,15 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HM
              mode = 'patchseq',
              h5ad_fn = "HMBA_Macaque_BG_082024_AIT.h5ad",
              hierarchy <- c("Neighborhood_label", "Class_label", "Subclass_label", "Group_label"),
+             #class_colname = 'Neighborhood_label', 
+             #neigh_colname = 'Class_label', 
+             #subclass_colname = 'Subclass_label',  
+             #cluster_colname = 'Group_label',      # HACK because hierarchy is different, to match mouse whole brain
+             low_level = 'Group_label',
              proj_strs = "qIVSCC-MET",
              roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L",
-             off_target = c("Immune", "Astro-Epen", "Vascular", "OPC-Oligo")
+             off_target = c("Immune", "Astro-Epen", "Vascular", "OPC-Oligo"),
+             off_target_level = 'Class_label'
 )
 refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HMBA/Aim1_Regional_Taxonomies/BasalGanglia/Macaque/" 
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_117"  
@@ -94,11 +102,17 @@ data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Ma
 data_fn = "202411107_RSC-204-378_macaque_patchseq_star2.7" 
 mode = 'patchseq'                                                                                  
 h5ad_fn = "HMBA_Macaque_BG_082024_AIT.h5ad"
-hierarchy <- c("Neighborhood_label", "Class_label", "Subclass_label", "Group_label") 
-cluster_colname = 'Group_label'      # HACK because hierarchy is different, to match mouse whole brain
+hierarchy <- c("Neighborhood_label", "Class_label", "Subclass_label", "Group_label")
+#class_colname = 'Class_label' 
+#neigh_colname = 'Neighborhood_label' 
+#subclass_colname = 'Subclass_label'  
+low_level = 'Group_label'
+#cluster_colname = 'Group_label'      # HACK because hierarchy is different, to match mouse whole brain
+
 proj_strs = "qIVSCC-MET" 
 roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L"
 off_target = c("Immune", "Astro-Epen", "Vascular", "OPC-Oligo")
+off_target_level = 'Class_label'
 
 
 run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/10x_seq/NHP_BG_AIT_116",
@@ -382,7 +396,7 @@ main_subclasses = c('D1-Matrix', 'D2-Matrix', 'D1-Striosome', 'D2-Striosome', 'D
 #main_subclasses <- c(main_subclasses, remaining_subclasses)
 
 dim(annoNew_sub)
-y = annoNew_sub[[paste0(str_replace(subclass_colname,'_label',''),'_Corr')]]
+y = annoNew_sub[[paste0(str_replace(hierarchy[length(hierarchy)],'_label',''),'_Corr')]]
 type_counts_Corr = table(factor(y, levels=main_subclasses))
 y = annoNew_sub[[paste0(str_replace(subclass_colname,'_label',''),'_Tree')]]
 type_counts_Tree = table(factor(y, levels=main_subclasses))
@@ -529,7 +543,9 @@ table(postpatch1)/length(postpatch1)
 postpatch2 = annoNew_sub['postPatch_classification'][annoNew_sub['level3.subclass_Tree'] == 'D1-Matrix']
 table(postpatch2)/length(postpatch2)
 
-# Count cells with ephys
+# Count cells with ephysproj_strs = "qIVSCC-MET",
+             roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L",
+             off_target = c("Immune", "Astro-Epen", "Vascular", "OPC-Oligo")
 df_ephys = read.csv(file=file.path("NHP_ephys_features_20240822.csv"))
 df_id = read.csv("custom_report_20240429.csv")
 

@@ -5,7 +5,9 @@ options(stringsAsFactors = FALSE)
 options(future.globals.maxSize = 4000 * 1024^2)  # Can adjust this value if needed, depending on number of cells
 options(future.rng.onMisuse="ignore")
 
+library(scrattch.taxonomy)
 library(scrattch.mapping)
+library(scrattch.patchseq)
 library (dplyr)
 library(stringr)
 library(reticulate)
@@ -13,7 +15,7 @@ cell_type_mapper <- import("cell_type_mapper")
 
 run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode, 
                          h5ad_fn = NULL, hierarchy, proj_strs, roi_strs, 
-                         off_target) {
+                         off_target, off_target_level) {
   # This remakes taxonomy from feather files and reloads, very slow, use read_h5ad instead for the time being
   if (is.null(h5ad_fn)) {
     AIT.anndata <- loadTaxonomy(refFolder)
@@ -25,7 +27,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
     AIT.anndata = mappingMode(AIT.anndata, mode=mode)
   }, error = function(err) {
     ## Add in the off.target annotation.
-    AIT.anndata$obs['off_target'] = AIT.anndata$obs[hierarchy[2]]
+    AIT.anndata$obs['off_target'] = AIT.anndata$obs[off_target_level]
     
     # Setup the taxonomy for patchseqQC to infer off.target contamination
     AIT.anndata = buildPatchseqTaxonomy(AIT.anndata,
@@ -83,19 +85,21 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   
   query.mapping_obj <- taxonomy_mapping(AIT.anndata= AIT.anndata,
                                         query.data = query.data, 
-                                        corr.map   = TRUE, # Flags for which mapping algorithms to run
-                                        tree.map   = TRUE, 
-                                        seurat.map = FALSE, 
-                                        label.cols = c(neigh_colname, class_colname, subclass_colname, cluster_colname)
+                                        label.cols=hierarchy,
+                                        corr.map=TRUE,
+                                        hierarchical.map=FALSE,
+                                        tree.map=TRUE,
+                                        seurat.map=TRUE)
   )
+  
   a <- strsplit(refFolder,'/')[[1]]
   taxname <- a[length(a)]
   b <- strsplit(data_fn, '_')[[1]]
   dataname <- b[2]
   
-  save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping.Rdata', sep='_')))
-  query.mapping = getMappingResults(query.mapping_obj)
-  write.csv(query.mapping, file.path(mappingFolder, paste(taxname, dataname, 'mapping.csv', sep='_')), row.names=FALSE)
+  save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping2.Rdata', sep='_')))
+  query.mapping = getMappingResults(query.mapping_obj, scores = TRUE)
+  write.csv(query.mapping, file.path(mappingFolder, paste(taxname, dataname, 'mapping2.csv', sep='_')), row.names=FALSE)
   
   # Variable renaming
   #clusters  <- unique(query.mapping$cluster)   
@@ -115,8 +119,10 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   rownames(annotations_mapped) <- annotations_mapped$exp_component_name
   #type_counts_Corr = table(annotations_mapped$supertype_Corr)
   #type_counts_Tree = table(annotations_mapped$supertype_Tree)
-  type_counts_Corr = table(annotations_mapped$level3.subclass_Corr)
-  type_counts_Tree = table(annotations_mapped$level3.subclass_Tree)
+  #type_counts_Corr = table(annotations_mapped$level3.subclass_Corr)
+  #type_counts_Tree = table(annotations_mapped$level3.subclass_Tree)
+  type_counts_Corr = table(annotations_mapped$Group_Corr)
+  type_counts_Tree = table(annotations_mapped$Group_Tree)
 
   write.csv(annotations_mapped, file=file.path(mappingFolder, paste(taxname, dataname, 'ann_map_full.csv', sep='_')), row.names=FALSE)
   save(annotations_mapped, type_counts_Corr, type_counts_Tree, file=file.path(mappingFolder,paste(taxname, dataname, 'ann_map_full.Rdata', sep='_')))
@@ -168,7 +174,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   inds4 = annoNew$percent_reads_aligned_total >= 25      # Very conservative, but looks like nothing chucked improperly on UMAP
   #inds5 = annotations_mapped$percent_reads_aligned_to_introns > 25   # Chucks good samples
   #inds6 = annotations_mapped$score.Corr > 0.6
-  inds6 = annoNew$marker_sum_norm_label >= 0.6
+  inds6 = annoNew$marker_sum_norm_label >= 0.55
   
   annoNew_roi = annoNew[inds1,]
   save(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.Rdata', sep='_')))
