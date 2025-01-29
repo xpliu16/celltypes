@@ -41,6 +41,25 @@ proj_strs = "qIVSCC-MET"
 roi_strs = ""
 off_target = "Nonneuron"
 
+run_mappings(refFolder = "GreatApes_Human",
+             mappingFolder = "mapping/GreatApes_Human", 
+             data_dir =  "R_Object/",
+             data_fn = "20240606_RSC-122-365_human_patchseq_star2.7",
+             mode = 'patchseq',
+             h5ad_fn = 'GreatApes_Human.h5ad', 
+             class_colname = 'class_label',
+             neigh_colname = 'neighborhood_label',
+             subclass_colname = 'subclass_label', 
+             cluster_colname = 'cluster_label', 
+             proj_strs = "qIVSCC-MET",
+             roi_strs = "",
+             off_target = "glia"
+)
+
+
+
+
+
 # First time to fix non-relative path
 AIT.anndata = read_h5ad(file.path(refFolder,h5ad_fn))
 AIT.anndata$uns$taxonomyDir=refFolder

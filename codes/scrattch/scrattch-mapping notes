@@ -2,6 +2,8 @@ ssh -o ServerAliveInterval=6000 xiaoping.liu@hpc-login.corp.alleninstitute.org
 
 srun -c 10 --mem=384G -t 10:00:00 -p celltypes --pty bash
 
+singularity shell --cleanenv docker://jeremyinseattle/scrattch:0.7.1
+
 singularity shell --cleanenv docker://njjai/scrattch_mapping:0.7
 
 singularity shell --cleanenv docker://njjai/scrattch_mapping:0.6.3
@@ -22,3 +24,7 @@ Put mapping results here: /allen/programs/celltypes/workgroups/rnaseqanalysis/sh
 
 pipeline_output['feature_extraction']['cell_features']['zap']
 
+[1] "============================== Mapping ======================="
+[1] "Mon Dec  9 16:20:44 2024"
+[1] "Correlation-based mapping"
+Error in initialize(value, ...) : object 'mappingTree' not found
