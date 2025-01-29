@@ -36,6 +36,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
                                         subclass.column = subclass_colname, ## Typically this is `subclass_label` but tasic2016 has no subclass annotation.
                                         class.column = class_colname, ## The column by which off-target types are determined
                                         off.target.types = off_target, ## The off-target class.column labels for patchseqQC
+                                        subclass.subsample = 100,
                                         num.markers = 50, ## Number of markers for each annotation in `class_label`
                                         taxonomyDir = refFolder)
     AIT.anndata = mappingMode(AIT.anndata, mode=mode)
@@ -59,6 +60,15 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   # Put annotations and counts in the same order
   query.metadata <- query.metadata[match(colnames(query.data),query.metadata$exp_component_name),] 
   rownames(query.metadata) <- query.metadata$exp_component_name  
+  
+# SKIPPING THIS FOR NOW
+  ## Compute top 1000 binary marker genes for clusters (or use a pre-existing vector)
+  keep.cells   = !AIT.anndata$uns$filter[[mode]]
+  binary.genes = top_binary_genes(t(AIT.anndata$X[AIT.anndata$obs_names[keep.cells],]), AIT.anndata$obs$cluster_label[keep.cells], 1000)
+  # OR as.matrix(AIT.anndata$X)
+  
+  ## Update the anndata object with this gene set
+  AIT.anndata  = updateHighlyVariableGenes(AIT.anndata,binary.genes)
   
   # If necessary, trim data down to only unique cellnames
   
@@ -89,7 +99,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
                                         corr.map=TRUE,
                                         hierarchical.map=FALSE,
                                         tree.map=TRUE,
-                                        seurat.map=TRUE)
+                                        seurat.map=TRUE
   )
   
   a <- strsplit(refFolder,'/')[[1]]
@@ -97,9 +107,9 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   b <- strsplit(data_fn, '_')[[1]]
   dataname <- b[2]
   
-  save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping2.Rdata', sep='_')))
+  save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping_newdocker.Rdata', sep='_')))
   query.mapping = getMappingResults(query.mapping_obj, scores = TRUE)
-  write.csv(query.mapping, file.path(mappingFolder, paste(taxname, dataname, 'mapping2.csv', sep='_')), row.names=FALSE)
+  write.csv(query.mapping, file.path(mappingFolder, paste(taxname, dataname, 'mapping_newdocker.csv', sep='_')), row.names=FALSE)
   
   # Variable renaming
   #clusters  <- unique(query.mapping$cluster)   
@@ -127,13 +137,18 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   write.csv(annotations_mapped, file=file.path(mappingFolder, paste(taxname, dataname, 'ann_map_full.csv', sep='_')), row.names=FALSE)
   save(annotations_mapped, type_counts_Corr, type_counts_Tree, file=file.path(mappingFolder,paste(taxname, dataname, 'ann_map_full.Rdata', sep='_')))
 
-  buildMappingDirectory(AIT.anndata    = AIT.anndata, 
-                      mappingFolder  = file.path(mappingFolder, paste(taxname, dataname, 'map_full', sep='_')),
-                      query.data     = counts,  # Don't need log-normalized data here
-                      query.metadata = query.metadata,
-                      query.mapping  = query.mapping_obj,
-                      doPatchseqQC   = TRUE,  # Set to FALSE if not needed or if writePatchseqQCmarkers was not applied in reference generation
-  )
+  createShiny(AIT.anndata,
+              shinyDir = file.path(mappingFolder, paste(taxname, dataname, 'map_full', sep='_')), # Replace location with desired location for shiny directory output
+              metadata_names = NULL)
+  
+  #buildMappingDirectory(AIT.anndata    = AIT.anndata, 
+  #                    mappingFolder  = file.path(mappingFolder, paste(taxname, dataname, 'map_full', sep='_')),
+  #                    query.data     = counts,  # Don't need log-normalized data here
+  #                    query.metadata = query.metadata,
+  #                    query.mapping  = query.mapping_obj,
+  #                    doPatchseqQC   = TRUE,  # Set to FALSE if not needed or if writePatchseqQCmarkers was not applied in reference generation
+  #                    return.metrics = TRUE
+  #)
 
   dir(file.path(mappingFolder, paste(taxname, dataname, 'map_full', sep='_')))
 
@@ -177,8 +192,23 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   inds6 = annoNew$marker_sum_norm_label >= 0.55
   
   annoNew_roi = annoNew[inds1,]
+  cols <- colnames(annoNew_roi)
+  first_cols <- c("Row.names", "cell_name", "score.Corr", "score.Tree", "score.Seurat", 
+                  "Group_Corr", "Cluster_Corr",
+                  "Group_Tree",	"Cluster_Tree",
+                  "Group_Seurat", "Cluster_Seurat",
+                  "exp_component_name",	"marker_sum_norm_label", "Genes.Detected",
+                  "percent_reads_aligned_to_introns",	"percent_reads_aligned_total",	
+                  "postPatch", "endPipetteR", "Virus", "creCell",	"Region",	
+                  "postPatch_classification",	"go_no_go_63x",	"image_series_63x_qc",
+                  "rna_amplification_pass_fail", "percent_cdna_longer_than_400bp",
+                  "amplified_quantity_ng")
+  reordered_cols = c(first_cols, setdiff(cols, first_cols))
+  annoNew_roi_reorder = annoNew_roi[,reordered_cols]
   save(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.Rdata', sep='_')))
   write.csv(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.csv', sep='_')))
+  save(annoNew_roi_reorder, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC_reorder.Rdata', sep='_')))
+  write.csv(annoNew_roi_reorder, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC_reorder.csv', sep='_')))
   
   annoNew_roi_proj = annoNew[inds0&inds1,]
   save(annoNew_roi_proj, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_proj_QC.Rdata', sep='_')))
@@ -186,4 +216,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   annoNew_sub = annoNew[inds0&inds1&inds3&inds4&inds6,]
   save(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.Rdata', sep='_')))
   write.csv(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.csv', sep='_')))
+  
+  type_counts_Corr_sub = table(annoNew_sub$Group_Corr)
+  type_counts_Tree_sub = table(annoNew_sub$Group_Tree)
 }
