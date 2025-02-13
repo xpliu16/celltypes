@@ -12,6 +12,7 @@ library (dplyr)
 library(stringr)
 library(reticulate)
 cell_type_mapper <- import("cell_type_mapper")
+#reticulate::use_python("/usr/bin/python3")
 
 run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode, 
                          h5ad_fn = NULL, hierarchy, proj_strs, roi_strs, 
@@ -27,7 +28,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
     AIT.anndata = mappingMode(AIT.anndata, mode=mode)
   }, error = function(err) {
     ## Add in the off.target annotation.
-    AIT.anndata$obs['off_target'] = AIT.anndata$obs[off_target_level]
+    #AIT.anndata$obs['off_target'] = AIT.anndata$obs[off_target_level]
     
     # Setup the taxonomy for patchseqQC to infer off.target contamination
     AIT.anndata = buildPatchseqTaxonomy(AIT.anndata,
@@ -60,16 +61,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   # Put annotations and counts in the same order
   query.metadata <- query.metadata[match(colnames(query.data),query.metadata$exp_component_name),] 
   rownames(query.metadata) <- query.metadata$exp_component_name  
-  
-# SKIPPING THIS FOR NOW
-  ## Compute top 1000 binary marker genes for clusters (or use a pre-existing vector)
-  keep.cells   = !AIT.anndata$uns$filter[[mode]]
-  binary.genes = top_binary_genes(t(AIT.anndata$X[AIT.anndata$obs_names[keep.cells],]), AIT.anndata$obs$cluster_label[keep.cells], 1000)
-  # OR as.matrix(AIT.anndata$X)
-  
-  ## Update the anndata object with this gene set
-  AIT.anndata  = updateHighlyVariableGenes(AIT.anndata,binary.genes)
-  
+
   # If necessary, trim data down to only unique cellnames
   
   ## Get marker genes from dendrogram
@@ -83,12 +75,36 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   #dend_file = paste0(refFolder,'/dend.RData')
   #dend <- readRDS(dend_file)
   allMarkers = unique(unlist(get_dend_markers(dend)))
-  
+
+  # Filter out "trouble" genes (but beware tree mapping may not work)
+  excl1 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/sex_genes.txt")
+  excl2 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/mito_genes.txt")
+  excl3 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/activity_genes.txt")
+  excl4 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/is_immune_pvalb.txt")
+  foo<-unique(unlist(unlist(list(excl1, excl2, excl3, excl4))))
+  allMarkers = setdiff(allMarkers, foo) # 1382 to 1313
+
   ## Alternative get genes from MERFISH panel
   #panel_df = read.csv(file.path(panelFolder, "AIT_115_MERFISH_panel.xlsx"))
   
   ## Subset query data to just those markers
+  #query.data = query.data[intersect(rownames(query.data), allMarkers[1:100]),]
   query.data = query.data[intersect(rownames(query.data), allMarkers),]
+
+   ## Compute top 1000 binary marker genes for clusters (or use a pre-existing vector)
+  keep.cells   = !AIT.anndata$uns$filter[[mode]]
+  unique(AIT.anndata$obs$Subclass_label[keep.cells])    # check off-target filtering
+  binary.genes = top_binary_genes(t(AIT.anndata$X[AIT.anndata$obs_names[keep.cells],]), AIT.anndata$obs$cluster_label[keep.cells], 1000)
+  # OR as.matrix(AIT.anndata$X)
+  # cache binary genes to speed up and examine
+  write.csv(binary.genes, "/home/xiaoping.liu/scrattch/mapping/binarygenes.csv", row.names=FALSE)
+
+  ## Update the anndata object with this gene set
+  AIT.anndata  = updateHighlyVariableGenes(AIT.anndata,binary.genes)
+  #AIT.anndata = updateHighlyVariableGenes(AIT.anndata, allMarkers[1:100])
+  # Check
+  sum(AIT.anndata$var$highly_variable_genes_patchseq)
+
   
   ## Identify the offtarget cell types manually.
   print(unique(AIT.anndata$obs[class_colname]))
@@ -106,10 +122,14 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   taxname <- a[length(a)]
   b <- strsplit(data_fn, '_')[[1]]
   dataname <- b[2]
+
+  # Dataname modifier for testing mapping strategy variants
+  mappingFolder <- file.path(mappingFolder,"newdocker_rerun_20250210")
+  dir.create(mappingFolder, showWarnings = FALSE)
   
-  save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping_newdocker.Rdata', sep='_')))
+  save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping.Rdata', sep='_')))
   query.mapping = getMappingResults(query.mapping_obj, scores = TRUE)
-  write.csv(query.mapping, file.path(mappingFolder, paste(taxname, dataname, 'mapping_newdocker.csv', sep='_')), row.names=FALSE)
+  write.csv(query.mapping, file.path(mappingFolder, paste(taxname, dataname, 'mapping.csv', sep='_')), row.names=FALSE)
   
   # Variable renaming
   #clusters  <- unique(query.mapping$cluster)   
@@ -133,6 +153,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   #type_counts_Tree = table(annotations_mapped$level3.subclass_Tree)
   type_counts_Corr = table(annotations_mapped$Group_Corr)
   type_counts_Tree = table(annotations_mapped$Group_Tree)
+  type_counts_Seurat = table(annotations_mapped$Group_Seurat)
 
   write.csv(annotations_mapped, file=file.path(mappingFolder, paste(taxname, dataname, 'ann_map_full.csv', sep='_')), row.names=FALSE)
   save(annotations_mapped, type_counts_Corr, type_counts_Tree, file=file.path(mappingFolder,paste(taxname, dataname, 'ann_map_full.Rdata', sep='_')))
@@ -185,7 +206,8 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   inds1 = grepl(roi_strs, annoNew$roi)
   #inds1 = ifelse(grepl("STR|PALGPi|HYSTN",annoNew$roi), TRUE,FALSE)
   #inds2 = annotations_mapped$library_prep_pass_fail == "Pass"   # Chucks good samples
-  inds3 = annoNew$Genes.Detected >= 1000
+  #inds3 = annoNew$Genes.Detected >= 1000
+  inds3 = annoNew$Genes.Detected >= 1500
   inds4 = annoNew$percent_reads_aligned_total >= 25      # Very conservative, but looks like nothing chucked improperly on UMAP
   #inds5 = annotations_mapped$percent_reads_aligned_to_introns > 25   # Chucks good samples
   #inds6 = annotations_mapped$score.Corr > 0.6
@@ -219,4 +241,5 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   
   type_counts_Corr_sub = table(annoNew_sub$Group_Corr)
   type_counts_Tree_sub = table(annoNew_sub$Group_Tree)
+  type_counts_Seurat_sub = table(annoNew_sub$Group_Seurat)
 }

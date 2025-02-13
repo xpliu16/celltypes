@@ -44,7 +44,7 @@ off_target = "Nonneuron"
 run_mappings(refFolder = "GreatApes_Human",
              mappingFolder = "mapping/GreatApes_Human", 
              data_dir =  "R_Object/",
-             data_fn = "20240606_RSC-122-365_human_patchseq_star2.7",
+             data_fn = "20250106_RSC-122-380_human_patchseq_star2.7",
              mode = 'patchseq',
              h5ad_fn = 'GreatApes_Human.h5ad', 
              class_colname = 'class_label',
@@ -55,6 +55,19 @@ run_mappings(refFolder = "GreatApes_Human",
              roi_strs = "",
              off_target = "glia"
 )
+refFolder = "GreatApes_Human"
+mappingFolder = "mapping/GreatApes_Human"
+data_dir =  "R_Object/"
+data_fn = "20250106_RSC-122-380_human_patchseq_star2.7"
+mode = 'patchseq'
+h5ad_fn = 'GreatApes_Human.h5ad'
+class_colname = 'class_label'
+neigh_colname = 'neighborhood_label'
+subclass_colname = 'subclass_label'
+cluster_colname = 'cluster_label'
+proj_strs = "qIVSCC-MET"
+roi_strs = ""
+off_target = "glia"
 
 
 
