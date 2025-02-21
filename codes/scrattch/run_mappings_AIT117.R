@@ -78,30 +78,30 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
 
   # Filter out "trouble" genes (but beware tree mapping may not work)
   excl1 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/sex_genes.txt")
-  excl2 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/mito_genes.txt")
-  excl3 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/activity_genes.txt")
-  excl4 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/is_immune_pvalb.txt")
-  foo<-unique(unlist(unlist(list(excl1, excl2, excl3, excl4))))
-  allMarkers = setdiff(allMarkers, foo) # 1382 to 1313
+  #excl2 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/mito_genes.txt")
+  #excl3 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/activity_genes.txt")
+  #excl4 = read.csv("/home/xiaoping.liu/Jeremy_exclude_gene_lists/is_immune_pvalb.txt")
+  #foo<-unique(unlist(unlist(list(excl1, excl2, excl3, excl4))))
+  excl<-unique(unlist(unlist(list(excl1))))
+  allMarkers = setdiff(allMarkers, excl) # 1382 to 1347 (sex genes) 1313 (all trouble genes)
 
   ## Alternative get genes from MERFISH panel
   #panel_df = read.csv(file.path(panelFolder, "AIT_115_MERFISH_panel.xlsx"))
   
   ## Subset query data to just those markers
-  #query.data = query.data[intersect(rownames(query.data), allMarkers[1:100]),]
   query.data = query.data[intersect(rownames(query.data), allMarkers),]
 
    ## Compute top 1000 binary marker genes for clusters (or use a pre-existing vector)
   keep.cells   = !AIT.anndata$uns$filter[[mode]]
   unique(AIT.anndata$obs$Subclass_label[keep.cells])    # check off-target filtering
-  binary.genes = top_binary_genes(t(AIT.anndata$X[AIT.anndata$obs_names[keep.cells],]), AIT.anndata$obs$cluster_label[keep.cells], 1000)
+  binary.genes = top_binary_genes(t(AIT.anndata$X[AIT.anndata$obs_names[keep.cells],]), AIT.anndata$obs$cluster_label[keep.cells], 1500)
   # OR as.matrix(AIT.anndata$X)
   # cache binary genes to speed up and examine
-  write.csv(binary.genes, "/home/xiaoping.liu/scrattch/mapping/binarygenes.csv", row.names=FALSE)
+  # write.csv(binary.genes, "/home/xiaoping.liu/scrattch/mapping/binarygenes.csv", row.names=FALSE)
 
   ## Update the anndata object with this gene set
   AIT.anndata  = updateHighlyVariableGenes(AIT.anndata,binary.genes)
-  #AIT.anndata = updateHighlyVariableGenes(AIT.anndata, allMarkers[1:100])
+  #AIT.anndata = updateHighlyVariableGenes(AIT.anndata, allMarkers)
   # Check
   sum(AIT.anndata$var$highly_variable_genes_patchseq)
 
@@ -124,7 +124,7 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   dataname <- b[2]
 
   # Dataname modifier for testing mapping strategy variants
-  mappingFolder <- file.path(mappingFolder,"newdocker_rerun_20250210")
+  mappingFolder <- file.path(mappingFolder,"newdocker_binary1500_noexclusions_20250219")
   dir.create(mappingFolder, showWarnings = FALSE)
   
   save(query.mapping_obj, file=file.path(mappingFolder, paste(taxname, dataname, 'mapping.Rdata', sep='_')))
@@ -211,10 +211,12 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
   inds4 = annoNew$percent_reads_aligned_total >= 25      # Very conservative, but looks like nothing chucked improperly on UMAP
   #inds5 = annotations_mapped$percent_reads_aligned_to_introns > 25   # Chucks good samples
   #inds6 = annotations_mapped$score.Corr > 0.6
-  inds6 = annoNew$marker_sum_norm_label >= 0.55
+  #inds6 = annoNew$marker_sum_norm_label >= 0.55
+  #inds6 = annoNew$score.Tree >= 0.4
+  inds6 = annoNew$marker_sum_norm_label >= 0.6
+  #inds6 = annoNew$score.Corr>=0.4
   
-  annoNew_roi = annoNew[inds1,]
-  cols <- colnames(annoNew_roi)
+  cols <- colnames(annoNew)
   first_cols <- c("Row.names", "cell_name", "score.Corr", "score.Tree", "score.Seurat", 
                   "Group_Corr", "Cluster_Corr",
                   "Group_Tree",	"Cluster_Tree",
@@ -226,20 +228,48 @@ run_mappings <- function(refFolder, mappingFolder, data_dir, data_fn, mode,
                   "rna_amplification_pass_fail", "percent_cdna_longer_than_400bp",
                   "amplified_quantity_ng")
   reordered_cols = c(first_cols, setdiff(cols, first_cols))
-  annoNew_roi_reorder = annoNew_roi[,reordered_cols]
+  annoNew = annoNew[,reordered_cols]
+  annoNew_roi = annoNew[inds1,]
   save(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.Rdata', sep='_')))
   write.csv(annoNew_roi, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC.csv', sep='_')))
-  save(annoNew_roi_reorder, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC_reorder.Rdata', sep='_')))
-  write.csv(annoNew_roi_reorder, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_QC_reorder.csv', sep='_')))
   
   annoNew_roi_proj = annoNew[inds0&inds1,]
   save(annoNew_roi_proj, file=file.path(mappingFolder, paste(taxname, dataname, 'roi_proj_QC.Rdata', sep='_')))
   
   annoNew_sub = annoNew[inds0&inds1&inds3&inds4&inds6,]
-  save(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.Rdata', sep='_')))
-  write.csv(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC.csv', sep='_')))
+  save(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC_NMS06.Rdata', sep='_')))
+  write.csv(annoNew_sub, file=file.path(mappingFolder,paste(taxname, dataname, 'sub_QC_NMS06.csv', sep='_')))
   
   type_counts_Corr_sub = table(annoNew_sub$Group_Corr)
   type_counts_Tree_sub = table(annoNew_sub$Group_Tree)
   type_counts_Seurat_sub = table(annoNew_sub$Group_Seurat)
 }
+
+# If reloading
+#rownames(annoNew_sub) <- annoNew_sub[,'exp_component_name']
+
+query.data[c('SST','NPY', 'NOS1', 'TACR1', 'SCN9A'),rownames(annoNew_sub)[annoNew_sub$Group_Corr=='STR SST Chodl GABA']]
+query.data['SST',rownames(annoNew_sub)[annoNew_sub$Group_Tree=='STR SST Chodl GABA']]
+query.data['SST',rownames(annoNew_sub)[annoNew_sub$Group_Tree=='STR SST RSPO2 GABA']]
+query.data[c('CPNE4', 'KCNT2', 'DRD3', 'NTN1', 'PPP1R1B') ,rownames(annoNew_sub)[annoNew_sub$Group_Tree=='OT D1-ICj']]
+query.data[c('CHST9', 'RXFP1', 'B3GAT2', 'PPP1R1B', 'DRD2') ,rownames(annoNew_sub)[annoNew_sub$Group_Tree=='STRv D1 NUDAP']]
+query.data[c('CHST9', 'RXFP1', 'B3GAT2', 'PPP1R1B', 'DRD2') ,rownames(annoNew_sub)[annoNew_sub$Group_Tree=='STRd D1D2 Hybrid']]
+query.data[c('DRD1','KCNIP1', 'STXBP6', 'DRD2') ,rownames(annoNew_sub)[annoNew_sub$Group_Tree=='STRd D1 Striosome']]
+query.data[c('DRD1','KCNIP1', 'STXBP6', 'DRD2') ,rownames(annoNew_sub)[annoNew_sub$Group_Tree=='STRd D2 Striosome']]
+
+annoNew_sub['AB-S40304_S383_E1-50', c('marker_sum_norm_label', 'score.Tree', 'Group_Corr', 'Group_Seurat', 'Group_Tree')]
+
+annoNew_sub[annoNew_sub$Group_Tree=='OT D1-ICj', c('marker_sum_norm_label', 'score.Tree', 'Group_Corr', 'Group_Seurat', 'Group_Tree', 'roi')]
+annoNew_sub[annoNew_sub$Group_Corr=='STR SST Chodl GABA', c('marker_sum_norm_label', 'score.Tree', 'Group_Corr', 'Group_Seurat', 'Group_Tree', 'roi', 'Virus')]
+annoNew_sub[annoNew_sub$Group_Corr=='STRv D1 Shell', c('marker_sum_norm_label', 'score.Tree', 'Group_Corr', 'Group_Seurat', 'Group_Tree', 'roi', 'Virus')]
+
+length(annoNew_sub[(annoNew_sub$Group_Corr=='STRv D1 Shell')&(annoNew_sub$roi=='STRvACB'), 'Group_Tree'])
+length(annoNew_sub[(annoNew_sub$Group_Corr=='STRv D1 Shell')&(annoNew_sub$roi=='STRv_ACB'), 'Group_Tree'])
+table(annoNew_sub[(annoNew_sub$Group_Corr=='STRv D1 Shell')&(annoNew_sub$roi!='STRvACB')&(annoNew_sub$roi!='STRv_ACB'), 'Group_Tree'])
+dim(annoNew_sub[(annoNew_sub$Group_Corr=='STRv D1 Shell')&(annoNew_sub$Group_Tree=='STRv D1 Shell'),])
+table(annoNew_sub[(annoNew_sub$Group_Corr=='STRv D1 Shell')&((annoNew_sub$roi=='STRvACB')|(annoNew_sub$roi=='STRv_ACB')), 'Cluster_Corr'])
+table(annoNew_sub[(annoNew_sub$Group_Corr=='STRv D1 Shell')&(annoNew_sub$roi!='STRvACB')&(annoNew_sub$roi!='STRv_ACB'), 'Cluster_Corr'])
+
+
+query.data[c('SST','NPY', 'NOS1', 'TACR1', 'SCN9A'),rownames(annoNew_sub)[(annoNew_sub$Group_Corr=='STR SST Chodl GABA')&(annoNew_sub$Group_Tree=='STR SST Chodl GABA')]]
+annoNew_sub[(annoNew_sub$Group_Corr=='STR SST Chodl GABA')&(annoNew_sub$Group_Tree=='STR SST Chodl GABA'), c('marker_sum_norm_label', 'score.Tree', 'Group_Corr', 'Group_Seurat', 'Group_Tree', 'roi', 'Virus')]

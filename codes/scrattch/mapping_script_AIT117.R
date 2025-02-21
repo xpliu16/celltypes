@@ -22,7 +22,7 @@ run_mappings(refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HM
 refFolder = "/allen/programs/celltypes/workgroups/rnaseqanalysis/HMBA/Aim1_Regional_Taxonomies/BasalGanglia/Macaque/"
 mappingFolder = "/home/xiaoping.liu/scrattch/mapping/NHP_BG_AIT_117"  
 data_dir =  "/allen/programs/celltypes/workgroups/rnaseqanalysis/SMARTer/STAR/Macaque/patchseq/R_Object/" 
-data_fn = "20250106_RSC-204-380_macaque_patchseq_star2.7" 
+data_fn = "20250127_RSC-204-382_macaque_patchseq_star2.7" 
 mode = 'patchseq'                                                                                  
 #h5ad_fn = "HMBA_Macaque_BG_082024_AIT.h5ad"
 h5ad_fn = "HMBA_Macaque_BG_112024_AIT_v2.h5ad"
@@ -36,9 +36,8 @@ cluster_colname = 'Cluster_label'
 proj_strs = "qIVSCC-MET" 
 roi_strs = "STR|PALGPi|PALGPe|PAL_GPe|HYSTN|OT_L"
 off_target = c("Immune", "Astro-Epen", "Vascular", "OPC-Oligo")
-off_target_level = 'Class_label'
 
-mode = 'patchseq-str' 
+mode = 'patchseq_str' 
 off_target = c("Immune", "Astro-Epen", "Vascular", "OPC-Oligo", "F M Glut", "MB Dopaminergic", 
 "MB-GABA", "BG GABA Glut", "GP PVALB GABA", "SN PVALB GABA", "TH MEIS2 GABA", "SN STH GABA", 
 "BN MEIS2 GABA", "CTX-CGE GABA", "CTX-MGE GABA", "NDB SI LHX8 GABA", "GP STRv LHX8 GABA", 
